@@ -121,12 +121,7 @@ function App() {
         )}
 
         {view === 'saved' && (
-          <SavedList
-            phrases={savedPhrases}
-            onOpen={handleOpenInReader}
-            onTest={handleTestPhrase}
-            onDelete={handleDelete}
-          />
+          <SavedList phrases={savedPhrases} onOpen={handleOpenInReader} onDelete={handleDelete} />
         )}
 
         {view === 'test' && (

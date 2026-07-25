@@ -12,10 +12,17 @@ interface ReaderViewProps {
 }
 
 export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps) {
-  const [selected, setSelected] = useState<number | null>(null);
+  const segments = useMemo(() => segmentAndAnnotate(text, dict), [text, dict]);
+
+  // If this phrase is a single Chinese word (e.g. opened from "My List"),
+  // its meaning is shown right away instead of requiring an extra tap —
+  // with more than one word there's no single obvious one to reveal.
+  const [selected, setSelected] = useState<number | null>(() => {
+    const chineseIndices = segments.reduce<number[]>((acc, seg, idx) => (seg.isChinese ? [...acc, idx] : acc), []);
+    return chineseIndices.length === 1 ? chineseIndices[0] : null;
+  });
   const [savedFlash, setSavedFlash] = useState<{ count: number } | null>(null);
 
-  const segments = useMemo(() => segmentAndAnnotate(text, dict), [text, dict]);
   const hasText = text.trim().length > 0;
   const speechSupported = isSpeechSupported();
 

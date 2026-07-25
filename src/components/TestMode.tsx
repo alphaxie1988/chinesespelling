@@ -45,7 +45,7 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
               <li key={p.id} className="saved-row">
                 <span className="saved-text">{p.text}</span>
                 <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
-                  <PenLine size={16} aria-hidden="true" /> Test this
+                  <PenLine size={16} aria-hidden="true" /> Test
                 </button>
               </li>
             ))}

@@ -1,14 +1,13 @@
-import { Bookmark, PenLine, Trash2 } from 'lucide-react';
+import { Bookmark, Trash2 } from 'lucide-react';
 import type { SavedPhrase } from '../types';
 
 interface SavedListProps {
   phrases: SavedPhrase[];
   onOpen: (text: string) => void;
-  onTest: (phrase: SavedPhrase) => void;
   onDelete: (id: string) => void;
 }
 
-export function SavedList({ phrases, onOpen, onTest, onDelete }: SavedListProps) {
+export function SavedList({ phrases, onOpen, onDelete }: SavedListProps) {
   if (phrases.length === 0) {
     return (
       <p className="empty-state">
@@ -25,14 +24,10 @@ export function SavedList({ phrases, onOpen, onTest, onDelete }: SavedListProps)
     <ul className="saved-list">
       {phrases.map((p) => (
         <li key={p.id} className="saved-row">
-          <span className="saved-text">{p.text}</span>
+          <button type="button" className="saved-text saved-text-btn" onClick={() => onOpen(p.text)}>
+            {p.text}
+          </button>
           <div className="saved-actions">
-            <button type="button" className="btn btn-ghost" onClick={() => onOpen(p.text)}>
-              Open
-            </button>
-            <button type="button" className="btn btn-accent" onClick={() => onTest(p)}>
-              <PenLine size={16} aria-hidden="true" /> Test
-            </button>
             <button
               type="button"
               className="icon-btn"

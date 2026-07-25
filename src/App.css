@@ -385,6 +385,19 @@
   word-break: break-word;
 }
 
+.saved-text-btn {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.saved-text-btn:active {
+  opacity: 0.7;
+}
+
 .saved-actions {
   display: flex;
   gap: 8px;
