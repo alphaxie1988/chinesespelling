@@ -22,21 +22,24 @@
 
 .app-nav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   background: var(--surface);
   border-radius: 16px;
   padding: 6px;
   box-shadow: var(--shadow);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  white-space: nowrap;
   border: none;
   background: transparent;
   color: var(--text-soft);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 10px 8px;
+  padding: 10px 10px;
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -209,12 +212,43 @@
   white-space: pre-wrap;
 }
 
+.detail-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 40;
+  animation: detail-backdrop-in 0.15s ease-out;
+}
+
 .detail-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 720px;
+  z-index: 41;
   background: var(--surface);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 20px 20px 0 0;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 24px rgba(43, 42, 61, 0.2);
   border: 2px solid var(--primary-bg);
+  border-bottom: none;
+  max-height: 45vh;
+  overflow-y: auto;
+  animation: detail-panel-in 0.2s ease-out;
+}
+
+@keyframes detail-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes detail-panel-in {
+  from {
+    transform: translateY(100%);
+  }
 }
 
 .detail-header {
@@ -391,6 +425,148 @@
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+/* Progress view */
+
+.progress-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.progress-view h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.level-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.level-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.level-sub {
+  opacity: 0.85;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.xp-bar {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.xp-bar-fill {
+  background: var(--accent);
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease-out;
+}
+
+.xp-label {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.streak-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+
+.streak-flame {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.streak-days {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.streak-sub {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-tile {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-top: 4px;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.badge-tile {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.badge-icon {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.badge-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.badge-locked {
+  opacity: 0.45;
+}
+
+.badge-locked .badge-label {
+  color: var(--text-soft);
+}
+
+.badge-achieved {
+  border: 2px solid var(--accent);
 }
 
 /* Recall mode */

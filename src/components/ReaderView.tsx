@@ -92,33 +92,36 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
       )}
 
       {selected !== null && segments[selected] && (
-        <div className="detail-panel">
-          <div className="detail-header">
-            <div className="detail-heading">
-              <span className="detail-hanzi">{segments[selected].text}</span>
-              <span className="detail-pinyin">{segments[selected].pinyin}</span>
+        <>
+          <div className="detail-backdrop" onClick={() => setSelected(null)} />
+          <div className="detail-panel">
+            <div className="detail-header">
+              <div className="detail-heading">
+                <span className="detail-hanzi">{segments[selected].text}</span>
+                <span className="detail-pinyin">{segments[selected].pinyin}</span>
+              </div>
+              <div className="detail-header-actions">
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => speak(segments[selected]!.text)}
+                  disabled={!speechSupported}
+                  aria-label="Read this word aloud"
+                >
+                  🔊
+                </button>
+                <button type="button" className="icon-btn" onClick={() => setSelected(null)} aria-label="Close">
+                  ✕
+                </button>
+              </div>
             </div>
-            <div className="detail-header-actions">
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => speak(segments[selected]!.text)}
-                disabled={!speechSupported}
-                aria-label="Read this word aloud"
-              >
-                🔊
-              </button>
-              <button type="button" className="icon-btn" onClick={() => setSelected(null)} aria-label="Close">
-                ✕
-              </button>
-            </div>
+            <ul className="detail-meanings">
+              {(segments[selected].meanings ?? ['No dictionary entry found for this word.']).map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="detail-meanings">
-            {(segments[selected].meanings ?? ['No dictionary entry found for this word.']).map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
-        </div>
+        </>
       )}
     </div>
   );

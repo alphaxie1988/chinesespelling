@@ -38,4 +38,4 @@ export interface RecallAttemptRecord {
 // t = etymology type (pictographic/ideographic/pictophonetic).
 export type DecompositionData = Record<string, { d?: string; h?: string; t?: string }>;
 
-export type ViewName = 'reader' | 'saved' | 'test' | 'recall';
+export type ViewName = 'reader' | 'saved' | 'test' | 'recall' | 'progress';

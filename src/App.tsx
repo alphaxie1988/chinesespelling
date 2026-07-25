@@ -12,6 +12,7 @@ import './App.css';
 // of bloating the initial bundle every visitor downloads.
 const TestMode = lazy(() => import('./components/TestMode').then((m) => ({ default: m.TestMode })));
 const RecallMode = lazy(() => import('./components/RecallMode').then((m) => ({ default: m.RecallMode })));
+const ProgressView = lazy(() => import('./components/ProgressView').then((m) => ({ default: m.ProgressView })));
 
 function App() {
   const [dict, setDict] = useState<Dictionary | null>(null);
@@ -88,6 +89,13 @@ function App() {
           >
             🎧 Recall
           </button>
+          <button
+            type="button"
+            className={`nav-btn ${view === 'progress' ? 'nav-btn-active' : ''}`}
+            onClick={() => setView('progress')}
+          >
+            🏆 Progress
+          </button>
         </nav>
       </header>
 
@@ -127,6 +135,12 @@ function App() {
         {dict && view === 'recall' && (
           <Suspense fallback={<p className="loading-state">Loading recall mode…</p>}>
             <RecallMode savedPhrases={savedPhrases} dict={dict} onGoToReader={() => setView('reader')} />
+          </Suspense>
+        )}
+
+        {view === 'progress' && (
+          <Suspense fallback={<p className="loading-state">Loading progress…</p>}>
+            <ProgressView />
           </Suspense>
         )}
       </main>
