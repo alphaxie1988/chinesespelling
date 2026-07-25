@@ -68,35 +68,40 @@ function App() {
             className={`nav-btn ${view === 'reader' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('reader')}
           >
-            <BookOpen size={17} aria-hidden="true" /> Reader
+            <BookOpen size={19} aria-hidden="true" />
+            <span className="nav-label">Reader</span>
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'saved' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('saved')}
           >
-            <Bookmark size={17} aria-hidden="true" /> My List
+            <Bookmark size={19} aria-hidden="true" />
+            <span className="nav-label">My List</span>
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'test' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('test')}
           >
-            <PenLine size={17} aria-hidden="true" /> Write
+            <PenLine size={19} aria-hidden="true" />
+            <span className="nav-label">Write</span>
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'recall' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('recall')}
           >
-            <Headphones size={17} aria-hidden="true" /> Recall
+            <Headphones size={19} aria-hidden="true" />
+            <span className="nav-label">Recall</span>
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'progress' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('progress')}
           >
-            <Trophy size={17} aria-hidden="true" /> Progress
+            <Trophy size={19} aria-hidden="true" />
+            <span className="nav-label">Progress</span>
           </button>
         </nav>
         <InstallButton />
