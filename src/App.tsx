@@ -5,6 +5,7 @@ import { primeVoices } from './lib/speech';
 import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
 import { ReaderView } from './components/ReaderView';
 import { SavedList } from './components/SavedList';
+import { InstallButton } from './components/InstallButton';
 import type { Dictionary, SavedPhrase, ViewName } from './types';
 import './App.css';
 
@@ -98,6 +99,7 @@ function App() {
             <Trophy size={17} aria-hidden="true" /> Progress
           </button>
         </nav>
+        <InstallButton />
       </header>
 
       <main className="app-main">
