@@ -476,6 +476,26 @@
   background: var(--primary-bg);
 }
 
+.speed-control {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.speed-control label {
+  font-size: 14px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.speed-control input[type='range'] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
 .recall-reveal-btn {
   width: 100%;
   max-width: 280px;

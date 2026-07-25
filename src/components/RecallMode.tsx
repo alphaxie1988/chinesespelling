@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
-import { recordRecallAttempt } from '../lib/storage';
+import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
 
 interface RecallModeProps {
@@ -147,6 +147,7 @@ function RecallSession({
   const [finalResults, setFinalResults] = useState<Record<string, boolean>>({});
   const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
+  const [speed, setSpeed] = useState(() => getRecallSpeed());
 
   const speechSupported = isSpeechSupported();
   const current = queue[index];
@@ -161,10 +162,16 @@ function RecallSession({
   useEffect(() => {
     if (!finished && current) {
       setRevealed(false);
-      speak(current.displayText);
+      speak(current.displayText, speed);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
+
+  function handleSpeedChange(rate: number) {
+    setSpeed(rate);
+    setRecallSpeed(rate);
+    if (current) speak(current.displayText, rate);
+  }
 
   function handleMark(know: boolean) {
     if (!current) return;
@@ -237,11 +244,27 @@ function RecallSession({
         <button
           type="button"
           className="btn btn-ghost"
-          onClick={() => speak(current.displayText)}
+          onClick={() => speak(current.displayText, speed)}
           disabled={!speechSupported}
         >
           🔊 Play again
         </button>
+
+        <div className="speed-control">
+          <label htmlFor="recall-speed">
+            🐢 Speed: {speed.toFixed(1)}x 🐇
+          </label>
+          <input
+            id="recall-speed"
+            type="range"
+            min={0.5}
+            max={1.5}
+            step={0.1}
+            value={speed}
+            onChange={(e) => handleSpeedChange(Number(e.target.value))}
+            disabled={!speechSupported}
+          />
+        </div>
 
         {!revealed && (
           <button type="button" className="btn btn-accent recall-reveal-btn" onClick={() => setRevealed(true)}>

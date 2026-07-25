@@ -62,6 +62,18 @@ export function recordTestAttempt(record: TestAttemptRecord): void {
   localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(trimmed));
 }
 
+const RECALL_SPEED_KEY = 'cs.recallSpeed.v1';
+const DEFAULT_RECALL_SPEED = 0.8;
+
+export function getRecallSpeed(): number {
+  const raw = Number(localStorage.getItem(RECALL_SPEED_KEY));
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_RECALL_SPEED;
+}
+
+export function setRecallSpeed(rate: number): void {
+  localStorage.setItem(RECALL_SPEED_KEY, String(rate));
+}
+
 const RECALL_KEY = 'cs.recallAttempts.v1';
 
 export function getRecallAttempts(): RecallAttemptRecord[] {
