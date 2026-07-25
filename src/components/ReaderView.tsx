@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Bookmark, CheckCircle2, Volume2, X } from 'lucide-react';
+import { Bookmark, CheckCircle2, Grid2x2, Volume2, X } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { CameraScan } from './CameraScan';
@@ -23,6 +23,7 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     return chineseIndices.length === 1 ? chineseIndices[0] : null;
   });
   const [savedFlash, setSavedFlash] = useState<{ count: number } | null>(null);
+  const [splitFlash, setSplitFlash] = useState<{ count: number } | null>(null);
 
   const hasText = text.trim().length > 0;
   const speechSupported = isSpeechSupported();
@@ -40,6 +41,25 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     lines.forEach((line) => onSave(line));
     setSavedFlash({ count: lines.length });
     setTimeout(() => setSavedFlash(null), 1600);
+  }
+
+  function handleSplitSave() {
+    if (!hasText) return;
+    // Reuses the same segmentation shown as chips below, so "each word" here
+    // always matches exactly what's tappable on screen.
+    const uniqueWords: string[] = [];
+    const seen = new Set<string>();
+    for (const seg of segments) {
+      if (seg.isChinese && !seen.has(seg.text)) {
+        seen.add(seg.text);
+        uniqueWords.push(seg.text);
+      }
+    }
+    if (uniqueWords.length === 0) return;
+
+    uniqueWords.forEach((word) => onSave(word));
+    setSplitFlash({ count: uniqueWords.length });
+    setTimeout(() => setSplitFlash(null), 1600);
   }
 
   return (
@@ -75,6 +95,19 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
             <>
               <Bookmark size={18} aria-hidden="true" />
               Save to my list
+            </>
+          )}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={handleSplitSave} disabled={!hasText}>
+          {splitFlash ? (
+            <>
+              <CheckCircle2 size={18} aria-hidden="true" />
+              {splitFlash.count > 1 ? `Saved ${splitFlash.count} words!` : 'Saved!'}
+            </>
+          ) : (
+            <>
+              <Grid2x2 size={18} aria-hidden="true" />
+              Split into words
             </>
           )}
         </button>
