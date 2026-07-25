@@ -1,0 +1,137 @@
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { loadDictionary } from './lib/dictionary';
+import { primeVoices } from './lib/speech';
+import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
+import { ReaderView } from './components/ReaderView';
+import { SavedList } from './components/SavedList';
+import type { Dictionary, SavedPhrase, ViewName } from './types';
+import './App.css';
+
+// hanzi-writer (stroke-order rendering + quiz grading) is only needed once
+// the user opens Write Test mode, so it's split into its own chunk instead
+// of bloating the initial bundle every visitor downloads.
+const TestMode = lazy(() => import('./components/TestMode').then((m) => ({ default: m.TestMode })));
+const RecallMode = lazy(() => import('./components/RecallMode').then((m) => ({ default: m.RecallMode })));
+
+function App() {
+  const [dict, setDict] = useState<Dictionary | null>(null);
+  const [dictError, setDictError] = useState<string | null>(null);
+  const [view, setView] = useState<ViewName>('reader');
+  const [readerText, setReaderText] = useState('');
+  const [testPhrase, setTestPhrase] = useState<SavedPhrase | null>(null);
+  const [savedPhrases, setSavedPhrases] = useState<SavedPhrase[]>(() => getSavedPhrases());
+
+  useEffect(() => {
+    primeVoices();
+    loadDictionary()
+      .then(setDict)
+      .catch((err: Error) => setDictError(err.message));
+  }, []);
+
+  function refreshSaved() {
+    setSavedPhrases(getSavedPhrases());
+  }
+
+  function handleSave(text: string) {
+    savePhrase(text);
+    refreshSaved();
+  }
+
+  function handleOpenInReader(text: string) {
+    setReaderText(text);
+    setView('reader');
+  }
+
+  function handleTestPhrase(phrase: SavedPhrase | null) {
+    setTestPhrase(phrase);
+    setView('test');
+  }
+
+  function handleDelete(id: string) {
+    deleteSavedPhrase(id);
+    refreshSaved();
+    if (testPhrase?.id === id) setTestPhrase(null);
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <h1 className="app-title">
+          <span aria-hidden="true">🐼</span> Chinese Spelling Buddy
+        </h1>
+        <nav className="app-nav">
+          <button
+            type="button"
+            className={`nav-btn ${view === 'reader' ? 'nav-btn-active' : ''}`}
+            onClick={() => setView('reader')}
+          >
+            📖 Reader
+          </button>
+          <button
+            type="button"
+            className={`nav-btn ${view === 'saved' ? 'nav-btn-active' : ''}`}
+            onClick={() => setView('saved')}
+          >
+            ⭐ My List
+          </button>
+          <button
+            type="button"
+            className={`nav-btn ${view === 'test' ? 'nav-btn-active' : ''}`}
+            onClick={() => setView('test')}
+          >
+            ✍️ Write
+          </button>
+          <button
+            type="button"
+            className={`nav-btn ${view === 'recall' ? 'nav-btn-active' : ''}`}
+            onClick={() => setView('recall')}
+          >
+            🎧 Recall
+          </button>
+        </nav>
+      </header>
+
+      <main className="app-main">
+        {dictError && (
+          <p className="error-state">
+            Couldn't load the dictionary ({dictError}). Check your connection and reload the page.
+          </p>
+        )}
+
+        {!dict && !dictError && <p className="loading-state">Loading dictionary…</p>}
+
+        {dict && view === 'reader' && (
+          <ReaderView dict={dict} text={readerText} onTextChange={setReaderText} onSave={handleSave} />
+        )}
+
+        {view === 'saved' && (
+          <SavedList
+            phrases={savedPhrases}
+            onOpen={handleOpenInReader}
+            onTest={handleTestPhrase}
+            onDelete={handleDelete}
+          />
+        )}
+
+        {view === 'test' && (
+          <Suspense fallback={<p className="loading-state">Loading test mode…</p>}>
+            <TestMode
+              savedPhrases={savedPhrases}
+              phrase={testPhrase}
+              onPickPhrase={handleTestPhrase}
+              onGoToReader={() => setView('reader')}
+            />
+          </Suspense>
+        )}
+
+        {dict && view === 'recall' && (
+          <Suspense fallback={<p className="loading-state">Loading recall mode…</p>}>
+            <RecallMode savedPhrases={savedPhrases} dict={dict} onGoToReader={() => setView('reader')} />
+          </Suspense>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default App;
