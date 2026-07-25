@@ -37,6 +37,11 @@ export default defineConfig({
         // usable) and instead cached lazily as the user actually visits
         // words/characters, via the runtime caching rules below.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        // The OCR feature's JS chunk bundles onnxruntime-web + the OCR
+        // pipeline and is multiple MB by itself — like the dictionary/stroke
+        // data, it should only be fetched when someone actually uses the
+        // camera-scan feature, not precached for every visitor.
+        globIgnores: ['**/ocr-*.js'],
         runtimeCaching: [
           {
             urlPattern: /\/dict\/cedict\.json$/,
@@ -59,6 +64,30 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'char-decomposition',
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /\/ocr\/.+\.(onnx|txt)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ocr-models',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /\/ort\/.+\.(wasm|mjs)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'onnxruntime-wasm',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /\/assets\/ocr-.+\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ocr-feature-chunk',
               expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },

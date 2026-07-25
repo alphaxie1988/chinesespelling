@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Bookmark, CheckCircle2, Volume2, X } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
+import { CameraScan } from './CameraScan';
 import type { Dictionary } from '../types';
 
 interface ReaderViewProps {
@@ -55,6 +56,12 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
       />
 
       <div className="reader-toolbar">
+        <CameraScan
+          onConfirm={(lines) => {
+            onTextChange(lines.join('\n'));
+            setSelected(null);
+          }}
+        />
         <button type="button" className="btn btn-primary" onClick={() => speak(text)} disabled={!hasText || !speechSupported}>
           <Volume2 size={18} aria-hidden="true" /> Read aloud
         </button>

@@ -840,3 +840,96 @@
 .recall-dontknow {
   color: var(--danger);
 }
+
+/* Camera scan (OCR) */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.ocr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--bg);
+  overflow-y: auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ocr-overlay-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.ocr-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  max-width: 320px;
+  margin: auto;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+  color: var(--primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ocr-review {
+  width: 100%;
+  max-width: 480px;
+  margin: 32px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ocr-line-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ocr-line-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocr-line-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--hanzi-font);
+  font-size: 20px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.ocr-line-input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
