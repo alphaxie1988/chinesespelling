@@ -250,6 +250,7 @@ function RecallSession({
   if (!current) return null;
 
   const mnemonics = decomp ? getMnemonicsForText(current.displayText, decomp, dict, isChineseChar) : [];
+  const chineseSegments = current.segments.filter((s) => s.isChinese);
 
   return (
     <div className="test-session recall-session">
@@ -265,7 +266,21 @@ function RecallSession({
             <div className="recall-card-hidden" aria-hidden="true">
               <Volume2 size={40} />
             </div>
-            <p className="hint-text">Listen carefully and try to recall the meaning.</p>
+            <p className="hint-text">Listen, then try to recall how to say and write it.</p>
+            <div className="recall-meaning-hint">
+              <span className="recall-meaning-label">Meaning</span>
+              {chineseSegments.length === 1 ? (
+                <ul className="detail-meanings">
+                  {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="recall-gloss">
+                  {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
+                </p>
+              )}
+            </div>
           </>
         )}
 
@@ -302,21 +317,19 @@ function RecallSession({
 
         {revealed && (
           <div className="recall-answer">
-            {current.segments
-              .filter((s) => s.isChinese)
-              .map((s, i) => (
-                <div key={i} className="recall-answer-word">
-                  <div className="detail-heading">
-                    <span className="detail-hanzi">{s.text}</span>
-                    <span className="detail-pinyin">{s.pinyin}</span>
-                  </div>
-                  <ul className="detail-meanings">
-                    {(s.meanings ?? ['No dictionary entry found.']).map((m, mi) => (
-                      <li key={mi}>{m}</li>
-                    ))}
-                  </ul>
+            {chineseSegments.map((s, i) => (
+              <div key={i} className="recall-answer-word">
+                <div className="detail-heading">
+                  <span className="detail-hanzi">{s.text}</span>
+                  <span className="detail-pinyin">{s.pinyin}</span>
                 </div>
-              ))}
+                <ul className="detail-meanings">
+                  {(s.meanings ?? ['No dictionary entry found.']).map((m, mi) => (
+                    <li key={mi}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
 
             {mnemonics.length > 0 && (
               <div className="mnemonic-box">
