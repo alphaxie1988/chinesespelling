@@ -51,13 +51,13 @@ function computeXP(recallAttempts: RecallAttemptRecord[], testAttempts: TestAtte
 }
 
 const LEVELS = [
-  { title: '🌱 Sprout', minXP: 0 },
-  { title: '🐣 New Learner', minXP: 50 },
-  { title: '🐼 Panda Cub', minXP: 150 },
-  { title: '📖 Word Explorer', minXP: 300 },
-  { title: '🀄 Character Master', minXP: 500 },
-  { title: '🏯 Language Scholar', minXP: 800 },
-  { title: '🐉 Dragon Scholar', minXP: 1200 },
+  { title: 'Sprout', minXP: 0 },
+  { title: 'New Learner', minXP: 50 },
+  { title: 'Word Explorer', minXP: 150 },
+  { title: 'Character Master', minXP: 300 },
+  { title: 'Language Scholar', minXP: 500 },
+  { title: 'Fluency Champion', minXP: 800 },
+  { title: 'Grand Scholar', minXP: 1200 },
 ];
 
 export interface Level {
@@ -97,8 +97,19 @@ function latestRecallKnownByCard(attempts: RecallAttemptRecord[]): Map<string, b
   return known;
 }
 
+export type BadgeKey =
+  | 'streak-3'
+  | 'streak-7'
+  | 'first-word'
+  | 'words-10'
+  | 'words-50'
+  | 'first-perfect-char'
+  | 'perfect-chars-20'
+  | 'xp-100'
+  | 'xp-500';
+
 export interface Badge {
-  icon: string;
+  key: BadgeKey;
   label: string;
   achieved: boolean;
 }
@@ -110,15 +121,15 @@ function computeBadges(input: {
   xp: number;
 }): Badge[] {
   return [
-    { icon: '🔥', label: '3-Day Streak', achieved: input.longestStreak >= 3 },
-    { icon: '🔥', label: '7-Day Streak', achieved: input.longestStreak >= 7 },
-    { icon: '📗', label: 'First Word Learned', achieved: input.wordsKnown >= 1 },
-    { icon: '📚', label: '10 Words Known', achieved: input.wordsKnown >= 10 },
-    { icon: '🎓', label: '50 Words Known', achieved: input.wordsKnown >= 50 },
-    { icon: '✍️', label: 'First Perfect Character', achieved: input.perfectCharacters >= 1 },
-    { icon: '🏆', label: '20 Perfect Characters', achieved: input.perfectCharacters >= 20 },
-    { icon: '⭐', label: '100 XP Earned', achieved: input.xp >= 100 },
-    { icon: '💎', label: '500 XP Earned', achieved: input.xp >= 500 },
+    { key: 'streak-3', label: '3-Day Streak', achieved: input.longestStreak >= 3 },
+    { key: 'streak-7', label: '7-Day Streak', achieved: input.longestStreak >= 7 },
+    { key: 'first-word', label: 'First Word Learned', achieved: input.wordsKnown >= 1 },
+    { key: 'words-10', label: '10 Words Known', achieved: input.wordsKnown >= 10 },
+    { key: 'words-50', label: '50 Words Known', achieved: input.wordsKnown >= 50 },
+    { key: 'first-perfect-char', label: 'First Perfect Character', achieved: input.perfectCharacters >= 1 },
+    { key: 'perfect-chars-20', label: '20 Perfect Characters', achieved: input.perfectCharacters >= 20 },
+    { key: 'xp-100', label: '100 XP Earned', achieved: input.xp >= 100 },
+    { key: 'xp-500', label: '500 XP Earned', achieved: input.xp >= 500 },
   ];
 }
 

@@ -1,3 +1,4 @@
+import { Bookmark, PenLine, Trash2 } from 'lucide-react';
 import type { SavedPhrase } from '../types';
 
 interface SavedListProps {
@@ -11,7 +12,11 @@ export function SavedList({ phrases, onOpen, onTest, onDelete }: SavedListProps)
   if (phrases.length === 0) {
     return (
       <p className="empty-state">
-        No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap "⭐ Save to my list".
+        No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap{' '}
+        <span className="icon-inline">
+          <Bookmark size={14} aria-hidden="true" /> Save to my list
+        </span>
+        .
       </p>
     );
   }
@@ -26,7 +31,7 @@ export function SavedList({ phrases, onOpen, onTest, onDelete }: SavedListProps)
               Open
             </button>
             <button type="button" className="btn btn-accent" onClick={() => onTest(p)}>
-              ✍️ Test
+              <PenLine size={16} aria-hidden="true" /> Test
             </button>
             <button
               type="button"
@@ -34,7 +39,7 @@ export function SavedList({ phrases, onOpen, onTest, onDelete }: SavedListProps)
               onClick={() => onDelete(p.id)}
               aria-label={`Delete "${p.text}"`}
             >
-              🗑️
+              <Trash2 size={18} aria-hidden="true" />
             </button>
           </div>
         </li>

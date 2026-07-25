@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HanziWriter from 'hanzi-writer';
+import { Bookmark, CheckCircle2, PartyPopper, PenLine, Sparkles, Volume2 } from 'lucide-react';
 import { isChineseChar } from '../lib/segment';
 import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
@@ -32,7 +33,11 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
         <h2>Choose a phrase to practice writing</h2>
         {savedPhrases.length === 0 ? (
           <p className="empty-state">
-            No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap "⭐ Save to my list" first.
+            No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap{' '}
+            <span className="icon-inline">
+              <Bookmark size={14} aria-hidden="true" /> Save to my list
+            </span>{' '}
+            first.
           </p>
         ) : (
           <ul className="saved-list">
@@ -40,7 +45,7 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
               <li key={p.id} className="saved-row">
                 <span className="saved-text">{p.text}</span>
                 <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
-                  ✍️ Test this
+                  <PenLine size={16} aria-hidden="true" /> Test this
                 </button>
               </li>
             ))}
@@ -154,7 +159,9 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
     const correctCount = results.filter((r) => r.correct).length;
     return (
       <div className="test-session test-summary">
-        <h2>Great job! 🎉</h2>
+        <h2 className="icon-inline">
+          <PartyPopper size={22} aria-hidden="true" /> Great job!
+        </h2>
         <p className="score-line">
           {correctCount} / {results.length} written perfectly (no mistakes)
         </p>
@@ -162,7 +169,15 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
           {results.map((r, i) => (
             <li key={i} className={r.correct ? 'summary-correct' : 'summary-wrong'}>
               <span className="summary-char">{r.char}</span>
-              <span>{r.correct ? 'Perfect ✅' : `${r.mistakes} mistake${r.mistakes === 1 ? '' : 's'}`}</span>
+              <span className="icon-inline">
+                {r.correct ? (
+                  <>
+                    <CheckCircle2 size={16} aria-hidden="true" /> Perfect
+                  </>
+                ) : (
+                  `${r.mistakes} mistake${r.mistakes === 1 ? '' : 's'}`
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -197,10 +212,10 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
       </div>
       <div className="test-toolbar">
         <button type="button" className="btn btn-ghost" onClick={() => speak(currentChar)} disabled={!speechSupported}>
-          🔊 Hear it
+          <Volume2 size={18} aria-hidden="true" /> Hear it
         </button>
         <button type="button" className="btn btn-ghost" onClick={handleShowMe}>
-          ✨ Show me how
+          <Sparkles size={18} aria-hidden="true" /> Show me how
         </button>
         <button type="button" className="btn btn-ghost" onClick={onExit}>
           Stop test

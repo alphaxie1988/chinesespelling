@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Bookmark, CheckCircle2, Volume2, X } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import type { Dictionary } from '../types';
@@ -12,7 +13,7 @@ interface ReaderViewProps {
 
 export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps) {
   const [selected, setSelected] = useState<number | null>(null);
-  const [savedFlash, setSavedFlash] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState<{ count: number } | null>(null);
 
   const segments = useMemo(() => segmentAndAnnotate(text, dict), [text, dict]);
   const hasText = text.trim().length > 0;
@@ -29,7 +30,7 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     if (lines.length === 0) return;
 
     lines.forEach((line) => onSave(line));
-    setSavedFlash(lines.length > 1 ? `✅ Saved ${lines.length} phrases!` : '✅ Saved!');
+    setSavedFlash({ count: lines.length });
     setTimeout(() => setSavedFlash(null), 1600);
   }
 
@@ -48,10 +49,20 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
 
       <div className="reader-toolbar">
         <button type="button" className="btn btn-primary" onClick={() => speak(text)} disabled={!hasText || !speechSupported}>
-          🔊 Read aloud
+          <Volume2 size={18} aria-hidden="true" /> Read aloud
         </button>
         <button type="button" className="btn btn-accent" onClick={handleSave} disabled={!hasText}>
-          {savedFlash ?? '⭐ Save to my list'}
+          {savedFlash ? (
+            <>
+              <CheckCircle2 size={18} aria-hidden="true" />
+              {savedFlash.count > 1 ? `Saved ${savedFlash.count} phrases!` : 'Saved!'}
+            </>
+          ) : (
+            <>
+              <Bookmark size={18} aria-hidden="true" />
+              Save to my list
+            </>
+          )}
         </button>
         <button type="button" className="btn btn-ghost" onClick={() => { onTextChange(''); setSelected(null); }} disabled={!hasText}>
           Clear
@@ -108,10 +119,10 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
                   disabled={!speechSupported}
                   aria-label="Read this word aloud"
                 >
-                  🔊
+                  <Volume2 size={20} aria-hidden="true" />
                 </button>
                 <button type="button" className="icon-btn" onClick={() => setSelected(null)} aria-label="Close">
-                  ✕
+                  <X size={20} aria-hidden="true" />
                 </button>
               </div>
             </div>

@@ -1,4 +1,18 @@
 import { useEffect, useState } from 'react';
+import {
+  Bookmark,
+  CheckCircle2,
+  Eye,
+  Grid2x2,
+  Lightbulb,
+  PartyPopper,
+  Play,
+  Rabbit,
+  ScrollText,
+  Turtle,
+  Volume2,
+  XCircle,
+} from 'lucide-react';
 import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
@@ -58,7 +72,11 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     return (
       <div className="test-picker">
         <p className="empty-state">
-          No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap "⭐ Save to my list" first.
+          No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap{' '}
+          <span className="icon-inline">
+            <Bookmark size={14} aria-hidden="true" /> Save to my list
+          </span>{' '}
+          first.
         </p>
         <button type="button" className="btn btn-primary" onClick={onGoToReader}>
           Go to Reader
@@ -94,14 +112,14 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
           className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
           onClick={() => setSplitMode('words')}
         >
-          🔤 Split into words
+          <Grid2x2 size={16} aria-hidden="true" /> Split into words
         </button>
         <button
           type="button"
           className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}
           onClick={() => setSplitMode('sentences')}
         >
-          📜 Whole sentences
+          <ScrollText size={16} aria-hidden="true" /> Whole sentences
         </button>
       </div>
 
@@ -126,7 +144,7 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
       </ul>
 
       <button type="button" className="btn btn-primary" onClick={startSession} disabled={selectedIds.size === 0}>
-        ▶️ Start test ({selectedIds.size} selected)
+        <Play size={18} aria-hidden="true" /> Start test ({selectedIds.size} selected)
       </button>
     </div>
   );
@@ -198,7 +216,9 @@ function RecallSession({
     const knownCount = uniqueCards.filter((c) => finalResults[c.id]).length;
     return (
       <div className="test-session test-summary">
-        <h2>Nice work! 🎉</h2>
+        <h2 className="icon-inline">
+          <PartyPopper size={22} aria-hidden="true" /> Nice work!
+        </h2>
         <p className="score-line">
           {knownCount} / {uniqueCards.length} marked "I know it"
         </p>
@@ -206,7 +226,15 @@ function RecallSession({
           {uniqueCards.map((c) => (
             <li key={c.id} className={finalResults[c.id] ? 'summary-correct' : 'summary-wrong'}>
               <span className="summary-char">{c.displayText}</span>
-              <span>{finalResults[c.id] ? 'Know it ✅' : 'Still tricky 🌱'}</span>
+              <span className="icon-inline">
+                {finalResults[c.id] ? (
+                  <>
+                    <CheckCircle2 size={16} aria-hidden="true" /> Know it
+                  </>
+                ) : (
+                  'Still tricky'
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -235,7 +263,7 @@ function RecallSession({
         ) : (
           <>
             <div className="recall-card-hidden" aria-hidden="true">
-              🔊
+              <Volume2 size={40} />
             </div>
             <p className="hint-text">Listen carefully and try to recall the meaning.</p>
           </>
@@ -247,12 +275,12 @@ function RecallSession({
           onClick={() => speak(current.displayText, speed)}
           disabled={!speechSupported}
         >
-          🔊 Play again
+          <Volume2 size={18} aria-hidden="true" /> Play again
         </button>
 
         <div className="speed-control">
-          <label htmlFor="recall-speed">
-            🐢 Speed: {speed.toFixed(1)}x 🐇
+          <label htmlFor="recall-speed" className="icon-inline">
+            <Turtle size={16} aria-hidden="true" /> Speed: {speed.toFixed(1)}x <Rabbit size={16} aria-hidden="true" />
           </label>
           <input
             id="recall-speed"
@@ -268,7 +296,7 @@ function RecallSession({
 
         {!revealed && (
           <button type="button" className="btn btn-accent recall-reveal-btn" onClick={() => setRevealed(true)}>
-            🔎 Show answer
+            <Eye size={18} aria-hidden="true" /> Show answer
           </button>
         )}
 
@@ -292,7 +320,9 @@ function RecallSession({
 
             {mnemonics.length > 0 && (
               <div className="mnemonic-box">
-                <h3>💡 Creative ways to remember</h3>
+                <h3 className="icon-inline">
+                  <Lightbulb size={16} aria-hidden="true" /> Creative ways to remember
+                </h3>
                 <ul>
                   {mnemonics.map((m) => (
                     <li key={m.char}>
@@ -305,10 +335,10 @@ function RecallSession({
 
             <div className="recall-mark-buttons">
               <button type="button" className="btn btn-ghost recall-dontknow" onClick={() => handleMark(false)}>
-                ❌ I don't know it
+                <XCircle size={18} aria-hidden="true" /> I don't know it
               </button>
               <button type="button" className="btn btn-accent recall-know" onClick={() => handleMark(true)}>
-                ✅ I know it
+                <CheckCircle2 size={18} aria-hidden="true" /> I know it
               </button>
             </div>
           </div>

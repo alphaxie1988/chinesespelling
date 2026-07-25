@@ -1,5 +1,30 @@
 import { useState } from 'react';
-import { getProgressStats } from '../lib/progress';
+import {
+  Award,
+  BookOpen,
+  Flame,
+  Gem,
+  GraduationCap,
+  Library,
+  Lock,
+  PenLine,
+  Star,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
+import { getProgressStats, type BadgeKey } from '../lib/progress';
+
+const BADGE_ICONS: Record<BadgeKey, LucideIcon> = {
+  'streak-3': Flame,
+  'streak-7': Flame,
+  'first-word': BookOpen,
+  'words-10': Library,
+  'words-50': GraduationCap,
+  'first-perfect-char': PenLine,
+  'perfect-chars-20': Award,
+  'xp-100': Star,
+  'xp-500': Gem,
+};
 
 export function ProgressView() {
   const [stats] = useState(() => getProgressStats());
@@ -8,7 +33,10 @@ export function ProgressView() {
   return (
     <div className="progress-view">
       <div className="level-card">
-        <div className="level-title">{stats.level.title}</div>
+        <div className="level-title icon-inline">
+          <Award size={24} aria-hidden="true" />
+          {stats.level.title}
+        </div>
         <div className="level-sub">Level {stats.level.levelNumber}</div>
         {!stats.level.isMaxLevel && (
           <div className="xp-bar">
@@ -26,9 +54,7 @@ export function ProgressView() {
       </div>
 
       <div className="streak-card">
-        <div className="streak-flame" aria-hidden="true">
-          🔥
-        </div>
+        <Flame className="streak-flame" aria-hidden="true" size={40} />
         <div>
           <div className="streak-days">
             {stats.streak.current} day{stats.streak.current === 1 ? '' : 's'} streak
@@ -60,14 +86,19 @@ export function ProgressView() {
         </div>
       </div>
 
-      <h2>Badges</h2>
+      <h2 className="icon-inline">
+        <Trophy size={18} aria-hidden="true" /> Badges
+      </h2>
       <div className="badges-grid">
-        {stats.badges.map((b) => (
-          <div key={b.label} className={`badge-tile ${b.achieved ? 'badge-achieved' : 'badge-locked'}`}>
-            <div className="badge-icon">{b.achieved ? b.icon : '🔒'}</div>
-            <div className="badge-label">{b.label}</div>
-          </div>
-        ))}
+        {stats.badges.map((b) => {
+          const Icon = b.achieved ? BADGE_ICONS[b.key] : Lock;
+          return (
+            <div key={b.label} className={`badge-tile ${b.achieved ? 'badge-achieved' : 'badge-locked'}`}>
+              <Icon className="badge-icon" aria-hidden="true" size={28} />
+              <div className="badge-label">{b.label}</div>
+            </div>
+          );
+        })}
       </div>
 
       {!hasActivity && (

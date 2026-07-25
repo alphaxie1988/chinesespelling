@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { BookOpen, Bookmark, Headphones, Languages, PenLine, Trophy } from 'lucide-react';
 import { loadDictionary } from './lib/dictionary';
 import { primeVoices } from './lib/speech';
 import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
@@ -58,7 +59,7 @@ function App() {
     <div className="app-shell">
       <header className="app-header">
         <h1 className="app-title">
-          <span aria-hidden="true">🐼</span> Chinese Spelling Buddy
+          <Languages aria-hidden="true" size={24} /> Chinese Spelling Buddy
         </h1>
         <nav className="app-nav">
           <button
@@ -66,35 +67,35 @@ function App() {
             className={`nav-btn ${view === 'reader' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('reader')}
           >
-            📖 Reader
+            <BookOpen size={17} aria-hidden="true" /> Reader
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'saved' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('saved')}
           >
-            ⭐ My List
+            <Bookmark size={17} aria-hidden="true" /> My List
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'test' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('test')}
           >
-            ✍️ Write
+            <PenLine size={17} aria-hidden="true" /> Write
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'recall' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('recall')}
           >
-            🎧 Recall
+            <Headphones size={17} aria-hidden="true" /> Recall
           </button>
           <button
             type="button"
             className={`nav-btn ${view === 'progress' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('progress')}
           >
-            🏆 Progress
+            <Trophy size={17} aria-hidden="true" /> Progress
           </button>
         </nav>
       </header>
