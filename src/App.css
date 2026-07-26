@@ -471,12 +471,14 @@
 
 .test-picker {
   padding-bottom: 84px;
+  --picker-bottom-reserve: 84px;
 }
 
 .test-picker-with-split {
   /* Extra room so the popped-up split-mode toggle doesn't sit over the tail
      end of the checkbox list. */
   padding-bottom: 148px;
+  --picker-bottom-reserve: 148px;
 }
 
 /* Stretches the picker to the full height available below the header so the
@@ -494,6 +496,18 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* flex:1/min-height:0 alone can't force this to shrink, since none of its
+     ancestors are height-capped (app-shell only has a *min*-height, so it
+     just grows to fit content) — without a real ceiling, a long saved-phrase
+     list would grow the whole page instead of scrolling in place, which
+     would scroll the picker-actions row (Select all/Clear/Random order) and
+     the fixed Start Test bar out of sync with each other. This caps it to
+     whatever's actually left of the viewport — a rough budget for the
+     header/picker-actions (236px) plus whatever test-picker itself is
+     already reserving at the bottom for the fixed Start Test bar/toggle —
+     so it fills that space when short and scrolls internally, never the
+     page, when long. */
+  max-height: calc(100dvh - 268px - var(--picker-bottom-reserve, 84px));
 }
 
 .recall-start-bar {
