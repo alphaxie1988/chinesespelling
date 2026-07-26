@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
@@ -113,6 +113,21 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     });
   }
 
+  // "Split into words" vs "whole sentences" only produces a different result
+  // once at least one selected item actually has more than one word — for a
+  // single-word save either mode looks identical, so there's nothing to ask.
+  const hasSentenceSelected = useMemo(
+    () =>
+      savedPhrases.some(
+        (p) => selectedIds.has(p.id) && segmentAndAnnotate(p.text, dict).filter((s) => s.isChinese).length > 1,
+      ),
+    [savedPhrases, selectedIds, dict],
+  );
+
+  useEffect(() => {
+    if (!hasSentenceSelected) setSplitMode('words');
+  }, [hasSentenceSelected]);
+
   function startSession() {
     const selected = savedPhrases.filter((p) => selectedIds.has(p.id));
     if (selected.length === 0) return;
@@ -125,26 +140,8 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   }
 
   return (
-    <div className="test-picker">
+    <div className={`test-picker ${hasSentenceSelected ? 'test-picker-with-split' : ''}`}>
       <h2>Listen &amp; Recall</h2>
-      <p className="hint-text">Choose which saved phrases to review, and how to split them into cards.</p>
-
-      <div className="split-toggle" role="radiogroup" aria-label="How to split phrases">
-        <button
-          type="button"
-          className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
-          onClick={() => setSplitMode('words')}
-        >
-          <Grid2x2 size={16} aria-hidden="true" /> Split into words
-        </button>
-        <button
-          type="button"
-          className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}
-          onClick={() => setSplitMode('sentences')}
-        >
-          <ScrollText size={16} aria-hidden="true" /> Whole sentences
-        </button>
-      </div>
 
       <div className="picker-actions">
         <button type="button" className="btn btn-ghost" onClick={() => setSelectedIds(new Set(savedPhrases.map((p) => p.id)))}>
@@ -173,6 +170,25 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
           ))}
         </ul>
       </div>
+
+      {hasSentenceSelected && (
+        <div className="split-toggle split-toggle-pop" role="radiogroup" aria-label="How to split phrases">
+          <button
+            type="button"
+            className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
+            onClick={() => setSplitMode('words')}
+          >
+            <Grid2x2 size={16} aria-hidden="true" /> Split into words
+          </button>
+          <button
+            type="button"
+            className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}
+            onClick={() => setSplitMode('sentences')}
+          >
+            <ScrollText size={16} aria-hidden="true" /> Whole sentences
+          </button>
+        </div>
+      )}
 
       <div className="recall-start-bar">
         <button type="button" className="btn btn-primary" onClick={startSession} disabled={selectedIds.size === 0}>

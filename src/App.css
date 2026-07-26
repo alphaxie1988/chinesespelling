@@ -471,6 +471,12 @@
   padding-bottom: 84px;
 }
 
+.test-picker-with-split {
+  /* Extra room so the popped-up split-mode toggle doesn't sit over the tail
+     end of the checkbox list. */
+  padding-bottom: 148px;
+}
+
 .recall-phrase-scroll {
   max-height: 45vh;
   overflow-y: auto;
@@ -766,6 +772,31 @@
 .toggle-btn-active {
   background: var(--primary-bg);
   color: var(--primary-dark);
+}
+
+/* Only shown once a selected phrase actually has more than one word — pops
+   up from the (fixed) Start Test button just below it. */
+.split-toggle-pop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 84px;
+  z-index: 29;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+  animation: split-toggle-pop-in 0.22s ease-out;
+}
+
+@keyframes split-toggle-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .picker-actions {
