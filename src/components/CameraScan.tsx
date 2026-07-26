@@ -18,6 +18,26 @@ type Step =
 // the handles inward rather than drawing a selection from scratch.
 const FULL_CROP: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
 
+// A crop drawn tight against the text (no margin) can make the OCR engine's
+// text-detection step throw — its edge-finding internals expect a bit of
+// background around a text region, and choke when that region touches the
+// crop's border. Growing the selection by a small margin before scanning
+// costs nothing visually (the extra sliver is just more of the original
+// photo) and avoids that failure mode in the common case.
+function padCrop(crop: PixelCrop, image: HTMLImageElement): PixelCrop {
+  const marginX = Math.max(8, crop.width * 0.06);
+  const marginY = Math.max(8, crop.height * 0.06);
+  const x = Math.max(0, crop.x - marginX);
+  const y = Math.max(0, crop.y - marginY);
+  return {
+    unit: 'px',
+    x,
+    y,
+    width: Math.min(image.width, crop.x + crop.width + marginX) - x,
+    height: Math.min(image.height, crop.y + crop.height + marginY) - y,
+  };
+}
+
 export function CameraScan({ onConfirm }: CameraScanProps) {
   const [step, setStep] = useState<Step>({ kind: 'idle' });
   const [crop, setCrop] = useState<Crop>(FULL_CROP);
@@ -57,9 +77,16 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
       }
       setStep({ kind: 'review', lines: scanned.map((l) => l.text) });
     } catch (err) {
+      // The OCR engine's text-detection step can throw on a tightly-cropped
+      // selection (an internal contour-processing edge case when detected
+      // text sits flush against the crop's border) — its error messages are
+      // raw internals (e.g. array/index errors) that would be confusing
+      // shown verbatim, so always surface a friendly, actionable message
+      // instead and keep the technical detail in the console for debugging.
+      console.error('OCR failed:', err);
       setStep({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Something went wrong reading that photo.',
+        message: "Couldn't read that photo. Try a looser crop (leave a little margin around the text), or use the whole photo instead.",
       });
     } finally {
       URL.revokeObjectURL(imageUrl);
@@ -82,7 +109,7 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
       return;
     }
 
-    const croppedUrl = await cropToImg(imgRef.current, completedCrop);
+    const croppedUrl = await cropToImg(imgRef.current, padCrop(completedCrop, imgRef.current));
     URL.revokeObjectURL(original);
     await runOcr(croppedUrl);
   }
