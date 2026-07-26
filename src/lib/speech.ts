@@ -32,7 +32,12 @@ export function hasZhVoice(): boolean {
   return pickZhVoice() !== null;
 }
 
-export function speak(text: string, rate = 0.85, onEnd?: () => void, onBoundary?: (charIndex: number) => void): boolean {
+export function speak(
+  text: string,
+  rate = 0.85,
+  onEnd?: (naturalFinish: boolean) => void,
+  onBoundary?: (charIndex: number) => void,
+): boolean {
   if (!isSpeechSupported() || !text.trim()) return false;
 
   // Cancel any utterance already in flight so rapid taps don't queue up and
@@ -45,10 +50,13 @@ export function speak(text: string, rate = 0.85, onEnd?: () => void, onBoundary?
   utterance.lang = voice?.lang ?? 'zh-CN';
   utterance.rate = rate;
   if (onEnd) {
-    // Fires for a natural finish (onend) as well as being interrupted by
-    // cancel()/an error (onerror) — either way playback has stopped.
-    utterance.onend = onEnd;
-    utterance.onerror = onEnd;
+    // Both mean playback has stopped, but only onend is a genuine full
+    // read-through — onerror also fires when cancel() interrupts it (e.g.
+    // a pause, or a newer utterance cutting this one off), which callers
+    // need to tell apart from a real finish (e.g. to calibrate timing only
+    // off complete reads).
+    utterance.onend = () => onEnd(true);
+    utterance.onerror = () => onEnd(false);
   }
   if (onBoundary) {
     utterance.onboundary = (e) => onBoundary(e.charIndex);

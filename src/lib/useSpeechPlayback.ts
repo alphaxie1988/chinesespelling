@@ -5,15 +5,23 @@ import { speak, stopSpeaking } from './speech';
 // enough that word-by-word highlighting reads as smooth, not choppy.
 const HIGHLIGHT_POLL_MS = 120;
 
+// Starting guess for how long one character takes to speak at 1.0x, before
+// any real data is available. Deliberately on the faster side (most Chinese
+// TTS voices read closer to 4-5 chars/sec than 3) since a too-slow guess is
+// exactly what makes read-along highlighting visibly lag the audio.
+const INITIAL_MS_PER_CHAR = 230;
+
 /**
  * Play/pause/continue for a single passage of text, backed by the Web
  * Speech API. speechSynthesis.resume() is unreliable across browsers/OSes
  * once paused (a long-standing platform bug — it looks like it should work
  * but silently never resumes), so pausing actually cancels the utterance
  * and continuing re-speaks just the remaining text. Some voices don't fire
- * onboundary for Chinese at all, so the resume position falls back to a
- * rough elapsed-time estimate (biased a bit short, so a wrong guess repeats
- * a beat of audio rather than skipping ahead and cutting off content).
+ * onboundary for Chinese at all, so position (for both resuming after a
+ * pause and read-along highlighting) falls back to an elapsed-time
+ * estimate — self-calibrating from how long each utterance actually took to
+ * finish, since the right speed varies by voice/browser/OS and there's no
+ * way to know it in advance.
  */
 export function useSpeechPlayback() {
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -35,6 +43,10 @@ export function useSpeechPlayback() {
   const rateAtPlayRef = useRef(1);
   const pausedAtRef = useRef(0);
   const textRef = useRef('');
+  // Learned ms-per-character at 1.0x, refined after every utterance that
+  // actually finishes on its own (not one that got cancelled/interrupted,
+  // which wouldn't reflect its true full duration).
+  const msPerCharRef = useRef(INITIAL_MS_PER_CHAR);
 
   function play(text: string, rate: number, offset = 0) {
     if (!text.trim()) return;
@@ -46,14 +58,25 @@ export function useSpeechPlayback() {
     rateAtPlayRef.current = rate;
     setIsPaused(false);
     setHighlightIndex(offset);
+    const spokenLength = text.length - offset;
     const started = speak(
       text.slice(offset),
       rate,
-      () => {
-        if (speechGenRef.current === gen) {
-          setIsSpeaking(false);
-          setHighlightIndex(-1);
+      (naturalFinish) => {
+        if (speechGenRef.current !== gen) return;
+        if (naturalFinish && spokenLength > 0 && boundaryRef.current === 0) {
+          // Only calibrate off the elapsed-time path — if onboundary fired
+          // for this utterance, elapsed time was never driving the estimate
+          // for it, so timing it wouldn't measure the same thing.
+          const elapsedMs = Date.now() - playStartRef.current;
+          const observedMsPerChar = (elapsedMs / spokenLength) * rate;
+          // Blend rather than replace outright, so one oddly-timed read
+          // (e.g. this tab was backgrounded mid-utterance) can't swing the
+          // estimate too far in one shot.
+          msPerCharRef.current = msPerCharRef.current * 0.5 + observedMsPerChar * 0.5;
         }
+        setIsSpeaking(false);
+        setHighlightIndex(-1);
       },
       (charIndex) => {
         if (speechGenRef.current === gen) boundaryRef.current = charIndex;
@@ -62,11 +85,14 @@ export function useSpeechPlayback() {
     setIsSpeaking(started);
   }
 
-  function estimateCharsSpoken(remainingLength: number): number {
+  // bias <1 deliberately under-estimates (used when resuming after a pause,
+  // where guessing too far ahead would skip content the user never heard);
+  // bias 1 is the plain best-guess (used for live highlighting, where
+  // running behind the audio the whole time reads as obviously laggy).
+  function estimateCharsSpoken(remainingLength: number, bias: number): number {
     if (boundaryRef.current > 0) return boundaryRef.current;
-    const BASE_MS_PER_CHAR = 330; // ~3 characters/sec at 1.0x, a rough Mandarin TTS pace
     const elapsedMs = Date.now() - playStartRef.current;
-    const estimated = Math.floor((elapsedMs / (BASE_MS_PER_CHAR / rateAtPlayRef.current)) * 0.85);
+    const estimated = Math.floor((elapsedMs / (msPerCharRef.current / rateAtPlayRef.current)) * bias);
     return Math.max(0, Math.min(estimated, Math.max(0, remainingLength - 1)));
   }
 
@@ -76,7 +102,7 @@ export function useSpeechPlayback() {
       play(textRef.current, rate, pausedAtRef.current);
     } else {
       const remainingLength = textRef.current.length - offsetRef.current;
-      pausedAtRef.current = offsetRef.current + estimateCharsSpoken(remainingLength);
+      pausedAtRef.current = offsetRef.current + estimateCharsSpoken(remainingLength, 0.85);
       speechGenRef.current++; // invalidates the stale onEnd that cancel() below triggers
       stopSpeaking();
       setIsPaused(true);
@@ -85,16 +111,16 @@ export function useSpeechPlayback() {
 
   // Advances highlightIndex while actively speaking, using the same
   // best-available estimate (real onboundary data when the voice provides
-  // it, else the rough elapsed-time guess) that already backs pause/resume
-  // — so read-along highlighting works on every voice, not just ones that
-  // fire boundary events, at the cost of sometimes drifting a bit on longer
-  // sentences. Frozen (not cleared) while paused, so the last-highlighted
-  // word stays visible instead of disappearing.
+  // it, else the calibrated elapsed-time guess) — so read-along highlighting
+  // works on every voice, not just ones that fire boundary events, at the
+  // cost of sometimes drifting a bit on longer sentences. Frozen (not
+  // cleared) while paused, so the last-highlighted word stays visible
+  // instead of disappearing.
   useEffect(() => {
     if (!isSpeaking || isPaused) return;
     const interval = setInterval(() => {
       const remainingLength = textRef.current.length - offsetRef.current;
-      setHighlightIndex(offsetRef.current + estimateCharsSpoken(remainingLength));
+      setHighlightIndex(offsetRef.current + estimateCharsSpoken(remainingLength, 1));
     }, HIGHLIGHT_POLL_MS);
     return () => clearInterval(interval);
   }, [isSpeaking, isPaused]);
