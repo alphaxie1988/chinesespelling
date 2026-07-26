@@ -1,5 +1,9 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { speak, stopSpeaking } from './speech';
+
+// How often to refresh highlightIndex while actively speaking. Frequent
+// enough that word-by-word highlighting reads as smooth, not choppy.
+const HIGHLIGHT_POLL_MS = 120;
 
 /**
  * Play/pause/continue for a single passage of text, backed by the Web
@@ -14,6 +18,9 @@ import { speak, stopSpeaking } from './speech';
 export function useSpeechPlayback() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  // Absolute character index (within the full text passed to play()) that's
+  // currently being spoken — for read-along highlighting. -1 when idle.
+  const [highlightIndex, setHighlightIndex] = useState(-1);
 
   // Each play() call bumps this so a stale onEnd from an utterance that was
   // interrupted by a newer one (cancel() fires its onerror) can't clobber
@@ -38,11 +45,15 @@ export function useSpeechPlayback() {
     playStartRef.current = Date.now();
     rateAtPlayRef.current = rate;
     setIsPaused(false);
+    setHighlightIndex(offset);
     const started = speak(
       text.slice(offset),
       rate,
       () => {
-        if (speechGenRef.current === gen) setIsSpeaking(false);
+        if (speechGenRef.current === gen) {
+          setIsSpeaking(false);
+          setHighlightIndex(-1);
+        }
       },
       (charIndex) => {
         if (speechGenRef.current === gen) boundaryRef.current = charIndex;
@@ -72,5 +83,21 @@ export function useSpeechPlayback() {
     }
   }
 
-  return { isSpeaking, isPaused, play, togglePause };
+  // Advances highlightIndex while actively speaking, using the same
+  // best-available estimate (real onboundary data when the voice provides
+  // it, else the rough elapsed-time guess) that already backs pause/resume
+  // — so read-along highlighting works on every voice, not just ones that
+  // fire boundary events, at the cost of sometimes drifting a bit on longer
+  // sentences. Frozen (not cleared) while paused, so the last-highlighted
+  // word stays visible instead of disappearing.
+  useEffect(() => {
+    if (!isSpeaking || isPaused) return;
+    const interval = setInterval(() => {
+      const remainingLength = textRef.current.length - offsetRef.current;
+      setHighlightIndex(offsetRef.current + estimateCharsSpoken(remainingLength));
+    }, HIGHLIGHT_POLL_MS);
+    return () => clearInterval(interval);
+  }, [isSpeaking, isPaused]);
+
+  return { isSpeaking, isPaused, highlightIndex, play, togglePause };
 }

@@ -18,7 +18,26 @@ interface ReaderViewProps {
 
 export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps) {
   const segments = useMemo(() => segmentAndAnnotate(text, dict), [text, dict]);
-  const { isSpeaking, isPaused, play, togglePause } = useSpeechPlayback();
+  const { isSpeaking, isPaused, highlightIndex, play, togglePause } = useSpeechPlayback();
+
+  // Running start-offset (character index into `text`) of each segment, so
+  // whichever word is currently being read aloud can be highlighted.
+  const segmentOffsets = useMemo(() => {
+    let offset = 0;
+    return segments.map((seg) => {
+      const start = offset;
+      offset += seg.text.length;
+      return start;
+    });
+  }, [segments]);
+
+  const readingIndex = useMemo(() => {
+    if (!isSpeaking || highlightIndex < 0) return -1;
+    for (let i = segments.length - 1; i >= 0; i--) {
+      if (segmentOffsets[i] <= highlightIndex) return i;
+    }
+    return -1;
+  }, [isSpeaking, highlightIndex, segments, segmentOffsets]);
 
   // If this phrase is a single Chinese word (e.g. opened from "My List"),
   // its meaning is shown right away instead of requiring an extra tap —
@@ -159,7 +178,7 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
                 type="button"
                 key={idx}
                 role="listitem"
-                className={`chip ${selected === idx ? 'chip-selected' : ''}`}
+                className={`chip ${selected === idx ? 'chip-selected' : ''} ${idx === readingIndex ? 'chip-reading' : ''}`}
                 onClick={() => setSelected(selected === idx ? null : idx)}
               >
                 <span className="chip-pinyin">{seg.pinyin}</span>
