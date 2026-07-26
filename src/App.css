@@ -778,10 +778,10 @@
 }
 
 .recall-stop-btn {
-  position: absolute;
-  top: 0;
-  right: 0;
   border-radius: 50%;
+  position: absolute;
+  top: 25px;
+  right: -10px;
 }
 
 .recall-card {
