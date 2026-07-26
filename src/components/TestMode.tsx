@@ -30,7 +30,6 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
   if (!phrase) {
     return (
       <div className="test-picker">
-        <h2>Choose a phrase to practice writing</h2>
         {savedPhrases.length === 0 ? (
           <p className="empty-state">
             No saved phrases yet. Go to <strong>Reader</strong>, paste a phrase, and tap{' '}

@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Bookmark, CheckCircle2, Grid2x2, Volume2, X } from 'lucide-react';
+import { Bookmark, CheckCircle2, Grid2x2, Pause, Play, Volume2, X } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
-import { speak, isSpeechSupported } from '../lib/speech';
+import { isSpeechSupported } from '../lib/speech';
+import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { CameraScan } from './CameraScan';
 import { WordDetailPanel } from './WordDetailPanel';
 import type { Dictionary } from '../types';
+
+const READ_ALOUD_RATE = 0.85;
 
 interface ReaderViewProps {
   dict: Dictionary;
@@ -15,6 +18,7 @@ interface ReaderViewProps {
 
 export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps) {
   const segments = useMemo(() => segmentAndAnnotate(text, dict), [text, dict]);
+  const { isSpeaking, isPaused, play, togglePause } = useSpeechPlayback();
 
   // If this phrase is a single Chinese word (e.g. opened from "My List"),
   // its meaning is shown right away instead of requiring an extra tap —
@@ -100,8 +104,20 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
             setSelected(null);
           }}
         />
-        <button type="button" className="btn btn-primary" onClick={() => speak(text)} disabled={!hasText || !speechSupported}>
-          <Volume2 size={18} aria-hidden="true" /> Read aloud
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => (isSpeaking ? togglePause(READ_ALOUD_RATE) : play(text, READ_ALOUD_RATE))}
+          disabled={!hasText || !speechSupported}
+        >
+          {!isSpeaking ? (
+            <Volume2 size={18} aria-hidden="true" />
+          ) : isPaused ? (
+            <Play size={18} aria-hidden="true" />
+          ) : (
+            <Pause size={18} aria-hidden="true" />
+          )}
+          Read aloud
         </button>
         <button type="button" className="btn btn-accent" onClick={handleSave} disabled={!hasText}>
           {savedFlash ? (

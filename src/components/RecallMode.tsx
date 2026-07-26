@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
@@ -20,7 +20,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { isChineseChar, resolveDisplayMeanings, segmentAndAnnotate } from '../lib/segment';
-import { speak, isSpeechSupported, stopSpeaking } from '../lib/speech';
+import { isSpeechSupported } from '../lib/speech';
+import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { FreehandCanvas } from './FreehandCanvas';
@@ -143,7 +144,6 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
 
   return (
     <div className={`test-picker recall-picker ${hasSentenceSelected ? 'test-picker-with-split' : ''}`}>
-      <h2>Listen &amp; Recall</h2>
 
       <div className="picker-actions">
         <button type="button" className="btn btn-ghost" onClick={() => setSelectedIds(new Set(savedPhrases.map((p) => p.id)))}>
@@ -221,23 +221,7 @@ function RecallSession({
   const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
   const [speed, setSpeed] = useState(() => getRecallSpeed());
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  // Each play() call bumps this so a stale onEnd from an utterance that was
-  // interrupted by a newer one (cancel() fires its onerror) can't clobber
-  // isSpeaking for the utterance that's actually playing now.
-  const speechGenRef = useRef(0);
-  // Absolute offset (within current.displayText) where the utterance
-  // currently playing begins, and how far into *that* utterance onboundary
-  // has reported reaching — together these say exactly where to pick back
-  // up when the user taps continue. Not every voice fires onboundary for
-  // Chinese, though, so playStartRef/rateAtPlayRef back that up with a
-  // rough elapsed-time estimate.
-  const offsetRef = useRef(0);
-  const boundaryRef = useRef(0);
-  const playStartRef = useRef(0);
-  const rateAtPlayRef = useRef(1);
-  const pausedAtRef = useRef(0);
+  const { isSpeaking, isPaused, play: playText, togglePause: togglePausePlayback } = useSpeechPlayback();
 
   const speechSupported = isSpeechSupported();
   const current = queue[index];
@@ -249,39 +233,9 @@ function RecallSession({
       .catch(() => setDecomp({}));
   }, []);
 
-  function play(rate: number, offset = 0) {
+  function play(rate: number) {
     if (!current) return;
-    const gen = ++speechGenRef.current;
-    offsetRef.current = offset;
-    boundaryRef.current = 0;
-    playStartRef.current = Date.now();
-    rateAtPlayRef.current = rate;
-    setIsPaused(false);
-    const started = speak(
-      current.displayText.slice(offset),
-      rate,
-      () => {
-        if (speechGenRef.current === gen) setIsSpeaking(false);
-      },
-      (charIndex) => {
-        if (speechGenRef.current === gen) boundaryRef.current = charIndex;
-      },
-    );
-    setIsSpeaking(started);
-  }
-
-  // Some Chinese TTS voices never fire onboundary at all, which would
-  // otherwise make continue always restart from wherever this play() began.
-  // Prefer the real boundary position when we have one; otherwise fall back
-  // to a rough elapsed-time estimate (deliberately biased a bit short, so a
-  // wrong guess replays a beat of what was already heard rather than
-  // skipping ahead and cutting off part of the sentence).
-  function estimateCharsSpoken(remainingLength: number): number {
-    if (boundaryRef.current > 0) return boundaryRef.current;
-    const BASE_MS_PER_CHAR = 330; // ~3 characters/sec at 1.0x, a rough Mandarin TTS pace
-    const elapsedMs = Date.now() - playStartRef.current;
-    const estimated = Math.floor((elapsedMs / (BASE_MS_PER_CHAR / rateAtPlayRef.current)) * 0.85);
-    return Math.max(0, Math.min(estimated, Math.max(0, remainingLength - 1)));
+    playText(current.displayText, rate);
   }
 
   // useLayoutEffect (not useEffect) so `revealed` resets before the browser
@@ -302,23 +256,7 @@ function RecallSession({
   }
 
   function togglePause() {
-    if (!current || !isSpeaking) return;
-    if (isPaused) {
-      play(speed, pausedAtRef.current);
-    } else {
-      // speechSynthesis.resume() is unreliable across browsers/OSes once
-      // paused (a long-standing platform bug), so instead of depending on
-      // it, remember where we got to and re-speak just the remaining text
-      // on continue. Compute that position *now*, at pause time — not when
-      // continue is tapped, since more time will have passed by then. Bump
-      // the generation first so cancel()'s resulting onerror (routed to the
-      // same onEnd handler) is recognized as stale and ignored.
-      const remainingLength = current.displayText.length - offsetRef.current;
-      pausedAtRef.current = offsetRef.current + estimateCharsSpoken(remainingLength);
-      speechGenRef.current++;
-      stopSpeaking();
-      setIsPaused(true);
-    }
+    togglePausePlayback(speed);
   }
 
   function handleMark(know: boolean) {
