@@ -17,7 +17,8 @@
     "onnxruntime-web": "^1.27.0",
     "pinyin-pro": "^3.28.2",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-image-crop": "^11.1.2"
   },
   "devDependencies": {
     "@gutenye/ocr-models": "^1.4.2",

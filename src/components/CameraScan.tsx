@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
-import { Camera, Loader2, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Camera, Check, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import ReactCrop, { cropToImg, type Crop, type PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 interface CameraScanProps {
   onConfirm: (lines: string[]) => void;
@@ -7,31 +9,45 @@ interface CameraScanProps {
 
 type Step =
   | { kind: 'idle' }
+  | { kind: 'cropping'; imageUrl: string }
   | { kind: 'processing' }
   | { kind: 'review'; lines: string[] }
   | { kind: 'error'; message: string };
 
+// Starts as the whole photo selected, so trimming margins is just dragging
+// the handles inward rather than drawing a selection from scratch.
+const FULL_CROP: Crop = { unit: '%', x: 0, y: 0, width: 100, height: 100 };
+
 export function CameraScan({ onConfirm }: CameraScanProps) {
   const [step, setStep] = useState<Step>({ kind: 'idle' });
+  const [crop, setCrop] = useState<Crop>(FULL_CROP);
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   function handleOpenCamera() {
     fileInputRef.current?.click();
   }
 
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file again later
     if (!file) return;
 
     const url = URL.createObjectURL(file);
+    setCrop(FULL_CROP);
+    setCompletedCrop(undefined);
+    setStep({ kind: 'cropping', imageUrl: url });
+  }
+
+  async function runOcr(imageUrl: string) {
     setStep({ kind: 'processing' });
     try {
       // onnxruntime-web + the OCR models are several MB — dynamically
       // imported here so they're only ever fetched once someone actually
-      // selects a photo, not merely because Reader rendered this button.
+      // gets to this point, not merely because Reader rendered this button.
       const { scanImageForChineseLines } = await import('../lib/ocr');
-      const scanned = await scanImageForChineseLines(url);
+      const scanned = await scanImageForChineseLines(imageUrl);
       if (scanned.length === 0) {
         setStep({
           kind: 'error',
@@ -46,8 +62,34 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
         message: err instanceof Error ? err.message : 'Something went wrong reading that photo.',
       });
     } finally {
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(imageUrl);
     }
+  }
+
+  function handleUseFullPhoto() {
+    if (step.kind !== 'cropping') return;
+    void runOcr(step.imageUrl);
+  }
+
+  async function handleConfirmCrop() {
+    if (step.kind !== 'cropping' || !imgRef.current) return;
+    const original = step.imageUrl;
+
+    // No real selection (e.g. they never touched the handles) — just use
+    // the whole photo rather than producing a degenerate zero-size crop.
+    if (!completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
+      await runOcr(original);
+      return;
+    }
+
+    const croppedUrl = await cropToImg(imgRef.current, completedCrop);
+    URL.revokeObjectURL(original);
+    await runOcr(croppedUrl);
+  }
+
+  function closeOverlay() {
+    if (step.kind === 'cropping') URL.revokeObjectURL(step.imageUrl);
+    setStep({ kind: 'idle' });
   }
 
   function updateLine(index: number, value: string) {
@@ -85,14 +127,31 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
 
       {step.kind !== 'idle' && (
         <div className="ocr-overlay">
-          <button
-            type="button"
-            className="icon-btn ocr-overlay-close"
-            onClick={() => setStep({ kind: 'idle' })}
-            aria-label="Close"
-          >
+          <button type="button" className="icon-btn ocr-overlay-close" onClick={closeOverlay} aria-label="Close">
             <X size={20} aria-hidden="true" />
           </button>
+
+          {step.kind === 'cropping' && (
+            <div className="ocr-crop">
+              <h2>Crop the photo (optional)</h2>
+              <p className="hint-text">Drag the corners to trim just the list, or use the whole photo.</p>
+
+              <div className="ocr-crop-area">
+                <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} onComplete={setCompletedCrop}>
+                  <img ref={imgRef} src={step.imageUrl} alt="Photo to crop" />
+                </ReactCrop>
+              </div>
+
+              <div className="test-summary-actions">
+                <button type="button" className="btn btn-ghost" onClick={handleUseFullPhoto}>
+                  <ImageIcon size={18} aria-hidden="true" /> Use whole photo
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => void handleConfirmCrop()}>
+                  <Check size={18} aria-hidden="true" /> Crop &amp; scan
+                </button>
+              </div>
+            </div>
+          )}
 
           {step.kind === 'processing' && (
             <div className="ocr-status">
