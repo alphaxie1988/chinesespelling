@@ -116,7 +116,7 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
             </>
           )}
         </button>
-        <button type="button" className="btn btn-ghost" onClick={handleSplitSave} disabled={!hasText}>
+        <button type="button" className="btn btn-accent" onClick={handleSplitSave} disabled={!hasText}>
           {splitFlash ? (
             <>
               <CheckCircle2 size={18} aria-hidden="true" />

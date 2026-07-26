@@ -941,6 +941,12 @@
   cursor: crosshair;
 }
 
+.recall-canvas-readonly {
+  cursor: default;
+  opacity: 0.85;
+  border-style: solid;
+}
+
 .recall-canvas-clear {
   align-self: flex-end;
 }

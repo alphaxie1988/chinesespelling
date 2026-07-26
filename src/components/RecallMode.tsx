@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ArrowLeft,
   Bookmark,
   CheckCircle2,
   ChevronDown,
@@ -300,7 +301,7 @@ function RecallSession({
             </button>
           )}
           <button type="button" className="btn btn-primary" onClick={onExit}>
-            Back to Recall setup
+            <ArrowLeft size={18} aria-hidden="true" /> Back to Test setup
           </button>
         </div>
       </div>
@@ -381,7 +382,7 @@ function RecallSession({
           </details>
         )}
 
-        <FreehandCanvas key={`${current.id}-${index}`} char={current.displayText} />
+        <FreehandCanvas key={`${current.id}-${index}`} readOnly={revealed} />
 
         {revealed && (
           <div className="recall-answer">

@@ -2,35 +2,26 @@ import { useEffect, useRef } from 'react';
 import { Eraser } from 'lucide-react';
 
 interface FreehandCanvasProps {
-  char: string;
+  /** Freezes the drawing and hides Clear once the answer is revealed, so
+   * the student's attempt stays as-is instead of being editable. */
+  readOnly?: boolean;
 }
 
-// Matches --hanzi-font's stack — canvas text can't reference a CSS variable.
-const GUIDE_FONT_STACK = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Heiti SC", sans-serif';
-
 /**
- * A plain freehand scratch-pad — no stroke validation, no grading. Just a
- * faint character guide the student can trace or doodle over with a finger
- * while they think, purely for fun/kinesthetic reinforcement.
+ * A plain freehand scratch-pad — no stroke validation, no grading, and no
+ * character guide (that would give away the answer before it's revealed).
+ * Just somewhere to doodle with a finger while thinking, purely for fun.
  */
-export function FreehandCanvas({ char }: FreehandCanvasProps) {
+export function FreehandCanvas({ readOnly = false }: FreehandCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
-  function drawGuide() {
+  function clearCanvas() {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx || width === 0 || height === 0) return;
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = 'rgba(128, 128, 128, 0.2)';
-    ctx.font = `${height * 0.72}px ${GUIDE_FONT_STACK}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(char, width / 2, height / 2 + height * 0.03);
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
   }
 
   useEffect(() => {
@@ -42,9 +33,7 @@ export function FreehandCanvas({ char }: FreehandCanvasProps) {
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.getContext('2d')?.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawGuide();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [char]);
+  }, []);
 
   function getPoint(e: React.PointerEvent<HTMLCanvasElement>) {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -56,13 +45,14 @@ export function FreehandCanvas({ char }: FreehandCanvasProps) {
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (readOnly) return;
     drawingRef.current = true;
     lastPointRef.current = getPoint(e);
     canvasRef.current?.setPointerCapture(e.pointerId);
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawingRef.current) return;
+    if (readOnly || !drawingRef.current) return;
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx || !lastPointRef.current) return;
     const point = getPoint(e);
@@ -86,15 +76,17 @@ export function FreehandCanvas({ char }: FreehandCanvasProps) {
     <div className="recall-canvas-wrap">
       <canvas
         ref={canvasRef}
-        className="recall-canvas"
+        className={`recall-canvas ${readOnly ? 'recall-canvas-readonly' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       />
-      <button type="button" className="btn btn-ghost recall-canvas-clear" onClick={drawGuide}>
-        <Eraser size={16} aria-hidden="true" /> Clear
-      </button>
+      {!readOnly && (
+        <button type="button" className="btn btn-ghost recall-canvas-clear" onClick={clearCanvas}>
+          <Eraser size={16} aria-hidden="true" /> Clear
+        </button>
+      )}
     </div>
   );
 }
