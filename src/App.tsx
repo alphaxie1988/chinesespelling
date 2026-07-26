@@ -7,6 +7,7 @@ import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
 import { ReaderView } from './components/ReaderView';
 import { SavedList } from './components/SavedList';
 import { InstallButton } from './components/InstallButton';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import type { Dictionary, SavedPhrase, ViewName } from './types';
 import './App.css';
 
@@ -124,36 +125,38 @@ function App() {
 
         {!dict && !dictError && <p className="loading-state">Loading dictionary…</p>}
 
-        {dict && view === 'reader' && (
-          <ReaderView dict={dict} text={readerText} onTextChange={handleReaderTextChange} onSave={handleSave} />
-        )}
+        <ErrorBoundary key={view}>
+          {dict && view === 'reader' && (
+            <ReaderView dict={dict} text={readerText} onTextChange={handleReaderTextChange} onSave={handleSave} />
+          )}
 
-        {dict && view === 'saved' && (
-          <SavedList phrases={savedPhrases} dict={dict} onOpen={handleOpenInReader} onDelete={handleDelete} />
-        )}
+          {dict && view === 'saved' && (
+            <SavedList phrases={savedPhrases} dict={dict} onOpen={handleOpenInReader} onDelete={handleDelete} />
+          )}
 
-        {view === 'test' && (
-          <Suspense fallback={<p className="loading-state">Loading Practise…</p>}>
-            <TestMode
-              savedPhrases={savedPhrases}
-              phrase={testPhrase}
-              onPickPhrase={handleTestPhrase}
-              onGoToReader={() => setView('reader')}
-            />
-          </Suspense>
-        )}
+          {view === 'test' && (
+            <Suspense fallback={<p className="loading-state">Loading Practise…</p>}>
+              <TestMode
+                savedPhrases={savedPhrases}
+                phrase={testPhrase}
+                onPickPhrase={handleTestPhrase}
+                onGoToReader={() => setView('reader')}
+              />
+            </Suspense>
+          )}
 
-        {dict && view === 'recall' && (
-          <Suspense fallback={<p className="loading-state">Loading Test…</p>}>
-            <RecallMode savedPhrases={savedPhrases} dict={dict} onGoToReader={() => setView('reader')} />
-          </Suspense>
-        )}
+          {dict && view === 'recall' && (
+            <Suspense fallback={<p className="loading-state">Loading Test…</p>}>
+              <RecallMode savedPhrases={savedPhrases} dict={dict} onGoToReader={() => setView('reader')} />
+            </Suspense>
+          )}
 
-        {view === 'progress' && (
-          <Suspense fallback={<p className="loading-state">Loading progress…</p>}>
-            <ProgressView />
-          </Suspense>
-        )}
+          {view === 'progress' && (
+            <Suspense fallback={<p className="loading-state">Loading progress…</p>}>
+              <ProgressView />
+            </Suspense>
+          )}
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -37,11 +37,17 @@ for (const line of lines) {
     // Classifier annotations ("CL:個|个[ge4]") aren't useful English meanings
     // for a primary-school reader, so drop them.
     .filter((d) => !d.startsWith('CL:'))
-    // Cross-reference / variant notices are noisy for kids; skip them too.
-    .filter((d) => !d.startsWith('see also') && !d.startsWith('variant of'));
+    // Cross-reference / variant notices ("see also 別的|别的[bie2 de5]") are
+    // noisy for kids; skip them too.
+    .filter((d) => !d.startsWith('see also') && !d.startsWith('variant of') && !d.startsWith('old variant of'))
+    // Catches remaining self-referential glosses these prefix checks miss
+    // (e.g. "used in 㐖毒[xie2 du2]") — a definition that just repeats the
+    // headword itself isn't a meaning, it's a pointer to a different entry.
+    .filter((d) => !d.includes(simplified));
 
-  if (defs.length === 0) continue;
-
+  // Still register the word (with no defs) even if every gloss got filtered
+  // out above, so forward-maximum-match segmentation still recognizes it as
+  // a real word — the app falls back to showing pinyin for these at runtime.
   const existing = dict.get(simplified);
   if (existing) {
     for (const d of defs) {

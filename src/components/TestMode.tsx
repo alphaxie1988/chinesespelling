@@ -76,12 +76,20 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   const [results, setResults] = useState<QuizResult[]>([]);
   const [strokesLeft, setStrokesLeft] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  // Set when a character's stroke data fails to load (e.g. a rare character
+  // missing from the bundled dataset) — surfaced instead of leaving the
+  // practice canvas stuck blank forever waiting on data that'll never arrive.
+  const [loadErrorChar, setLoadErrorChar] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HanziWriter | null>(null);
   // Guards the quiz callbacks below against firing after this effect's own
   // cleanup (character/phrase changed, or the component unmounted).
   const cancelledRef = useRef(false);
+  // HanziWriter's onLoadCharDataError is registered once (see below) and its
+  // closure would otherwise always see the character from that first render;
+  // this ref keeps it pointed at whichever character is current.
+  const currentCharRef = useRef('');
 
   const finished = index >= chars.length;
   const currentChar = chars[index];
@@ -119,6 +127,8 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   useEffect(() => {
     if (finished || !containerRef.current) return;
     cancelledRef.current = false;
+    currentCharRef.current = currentChar;
+    setLoadErrorChar(null);
 
     if (!writerRef.current) {
       writerRef.current = HanziWriter.create(containerRef.current, currentChar, {
@@ -129,6 +139,10 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
         strokeAnimationSpeed: 1,
         delayBetweenStrokes: 200,
         charDataLoader: hanziCharDataLoader,
+        onLoadCharDataError: () => {
+          if (cancelledRef.current) return;
+          setLoadErrorChar(currentCharRef.current);
+        },
       });
       startQuiz();
     } else {
@@ -143,6 +157,16 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, finished, currentChar, phrase.id]);
+
+  // A character with no usable stroke data can't be practiced — skip it
+  // automatically instead of leaving the quiz stuck on a blank canvas.
+  useEffect(() => {
+    if (loadErrorChar !== currentChar) return;
+    const timer = setTimeout(() => {
+      if (!cancelledRef.current) setIndex((i) => i + 1);
+    }, 1600);
+    return () => clearTimeout(timer);
+  }, [loadErrorChar, currentChar]);
 
   async function handleShowMe() {
     if (!writerRef.current || isAnimating) return;
@@ -234,6 +258,9 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
         </button>
       </div>
       <div ref={containerRef} className="hanzi-target" />
+      {loadErrorChar === currentChar && (
+        <p className="hint-text">Couldn't load stroke data for "{currentChar}" — skipping to the next one…</p>
+      )}
       <div className="test-status">
         {mistakes > 0 && <span className="mistake-count">Mistakes so far: {mistakes}</span>}
         {strokesLeft !== null && strokesLeft > 0 && <span>{strokesLeft} stroke(s) left</span>}

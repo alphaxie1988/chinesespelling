@@ -108,3 +108,17 @@ export function segmentAndAnnotate(text: string, dict: Dictionary): AnnotatedSeg
 
   return segments;
 }
+
+/**
+ * Some dictionary entries have no useful English gloss left after filtering
+ * out self-referential CC-CEDICT cross-references at build time (e.g. a rare
+ * character whose only entry was "old variant of X") — for those, and for
+ * words missing from the dictionary entirely, fall back to showing the
+ * word's pinyin (already resolved with full-sentence context, so a
+ * polyphonic character reads with the tone that fits this sentence) instead
+ * of a dead end.
+ */
+export function resolveDisplayMeanings(meanings: string[] | null, pinyin: string | null): string[] {
+  if (meanings && meanings.length > 0) return meanings;
+  return pinyin ? [pinyin] : ['No dictionary entry found for this word.'];
+}

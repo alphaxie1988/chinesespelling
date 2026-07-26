@@ -18,7 +18,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
+import { isChineseChar, resolveDisplayMeanings, segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
@@ -375,13 +375,13 @@ function RecallSession({
             <div className="recall-meaning-content">
               {chineseSegments.length === 1 ? (
                 <ul className="detail-meanings">
-                  {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
+                  {resolveDisplayMeanings(chineseSegments[0].meanings, chineseSegments[0].pinyin).map((m, i) => (
                     <li key={i}>{m}</li>
                   ))}
                 </ul>
               ) : (
                 <p className="recall-gloss">
-                  {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
+                  {chineseSegments.map((s) => resolveDisplayMeanings(s.meanings, s.pinyin)[0]).join(' · ')}
                 </p>
               )}
             </div>
@@ -401,7 +401,7 @@ function RecallSession({
                   <span className="detail-pinyin">{s.pinyin}</span>
                 </div>
                 <ul className="detail-meanings">
-                  {(s.meanings ?? ['No dictionary entry found.']).map((m, mi) => (
+                  {resolveDisplayMeanings(s.meanings, s.pinyin).map((m, mi) => (
                     <li key={mi}>{m}</li>
                   ))}
                 </ul>

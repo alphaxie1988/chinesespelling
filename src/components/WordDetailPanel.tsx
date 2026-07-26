@@ -1,5 +1,6 @@
 import { Volume2, X } from 'lucide-react';
 import { speak, isSpeechSupported } from '../lib/speech';
+import { resolveDisplayMeanings } from '../lib/segment';
 
 interface WordDetailPanelProps {
   text: string;
@@ -36,7 +37,7 @@ export function WordDetailPanel({ text, pinyin, meanings, onClose }: WordDetailP
           </div>
         </div>
         <ul className="detail-meanings">
-          {(meanings ?? ['No dictionary entry found for this word.']).map((m, i) => (
+          {resolveDisplayMeanings(meanings, pinyin).map((m, i) => (
             <li key={i}>{m}</li>
           ))}
         </ul>
