@@ -224,7 +224,6 @@ function RecallSession({
   const speechSupported = isSpeechSupported();
   const current = queue[index];
   const finished = index >= queue.length;
-  const isSentenceCard = current?.id.startsWith('phrase:') ?? false;
 
   useEffect(() => {
     loadDecomposition()
@@ -409,28 +408,28 @@ function RecallSession({
           <button
             type="button"
             className="recall-audio-circle"
-            onClick={() => play(speed)}
+            onClick={() => (isSpeaking ? togglePause() : play(speed))}
             disabled={!speechSupported}
-            aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
+            aria-label={
+              revealed
+                ? `Play "${current.displayText}" again`
+                : !isSpeaking
+                  ? 'Play audio'
+                  : isPaused
+                    ? 'Continue reading'
+                    : 'Pause reading'
+            }
           >
             {revealed ? (
               <span className="recall-audio-circle-text">{current.displayText}</span>
-            ) : (
+            ) : !isSpeaking ? (
               <Volume2 size={40} aria-hidden="true" />
+            ) : isPaused ? (
+              <Play size={40} aria-hidden="true" />
+            ) : (
+              <Pause size={40} aria-hidden="true" />
             )}
           </button>
-
-          {isSentenceCard && (
-            <button
-              type="button"
-              className="icon-btn recall-pause-btn"
-              onClick={togglePause}
-              disabled={!speechSupported || !isSpeaking}
-              aria-label={isPaused ? 'Continue reading' : 'Pause reading'}
-            >
-              {isPaused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
-            </button>
-          )}
 
           <div className="recall-speed-vertical-wrap">
             <Rabbit size={16} aria-hidden="true" />
