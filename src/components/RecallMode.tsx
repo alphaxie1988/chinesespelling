@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
@@ -7,6 +7,7 @@ import {
   Eye,
   Grid2x2,
   Lightbulb,
+  Pause,
   PartyPopper,
   Play,
   Rabbit,
@@ -19,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { isChineseChar, resolveDisplayMeanings, segmentAndAnnotate } from '../lib/segment';
-import { speak, isSpeechSupported } from '../lib/speech';
+import { speak, isSpeechSupported, pauseSpeaking, resumeSpeaking } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { FreehandCanvas } from './FreehandCanvas';
@@ -202,10 +203,17 @@ function RecallSession({
   const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
   const [speed, setSpeed] = useState(() => getRecallSpeed());
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  // Each play() call bumps this so a stale onEnd from an utterance that was
+  // interrupted by a newer one (cancel() fires its onerror) can't clobber
+  // isSpeaking for the utterance that's actually playing now.
+  const speechGenRef = useRef(0);
 
   const speechSupported = isSpeechSupported();
   const current = queue[index];
   const finished = index >= queue.length;
+  const isSentenceCard = current?.id.startsWith('phrase:') ?? false;
 
   useEffect(() => {
     loadDecomposition()
@@ -213,13 +221,22 @@ function RecallSession({
       .catch(() => setDecomp({}));
   }, []);
 
+  function play(text: string, rate: number) {
+    const gen = ++speechGenRef.current;
+    setIsPaused(false);
+    const started = speak(text, rate, () => {
+      if (speechGenRef.current === gen) setIsSpeaking(false);
+    });
+    setIsSpeaking(started);
+  }
+
   // useLayoutEffect (not useEffect) so `revealed` resets before the browser
   // paints the new card — otherwise the next word flashes onscreen for a
   // frame with the *previous* card's revealed=true state still applied.
   useLayoutEffect(() => {
     if (!finished && current) {
       setRevealed(false);
-      speak(current.displayText, speed);
+      play(current.displayText, speed);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
@@ -227,7 +244,18 @@ function RecallSession({
   function handleSpeedChange(rate: number) {
     setSpeed(rate);
     setRecallSpeed(rate);
-    if (current) speak(current.displayText, rate);
+    if (current) play(current.displayText, rate);
+  }
+
+  function togglePause() {
+    if (!isSpeaking) return;
+    if (isPaused) {
+      resumeSpeaking();
+      setIsPaused(false);
+    } else {
+      pauseSpeaking();
+      setIsPaused(true);
+    }
   }
 
   function handleMark(know: boolean) {
@@ -335,7 +363,7 @@ function RecallSession({
           <button
             type="button"
             className="recall-audio-circle"
-            onClick={() => speak(current.displayText, speed)}
+            onClick={() => play(current.displayText, speed)}
             disabled={!speechSupported}
             aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
           >
@@ -345,6 +373,18 @@ function RecallSession({
               <Volume2 size={40} aria-hidden="true" />
             )}
           </button>
+
+          {isSentenceCard && (
+            <button
+              type="button"
+              className="icon-btn recall-pause-btn"
+              onClick={togglePause}
+              disabled={!speechSupported || !isSpeaking}
+              aria-label={isPaused ? 'Continue reading' : 'Pause reading'}
+            >
+              {isPaused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
+            </button>
+          )}
 
           <div className="recall-speed-vertical-wrap">
             <Rabbit size={16} aria-hidden="true" />

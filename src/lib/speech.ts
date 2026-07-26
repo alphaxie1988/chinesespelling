@@ -32,7 +32,7 @@ export function hasZhVoice(): boolean {
   return pickZhVoice() !== null;
 }
 
-export function speak(text: string, rate = 0.85): boolean {
+export function speak(text: string, rate = 0.85, onEnd?: () => void): boolean {
   if (!isSpeechSupported() || !text.trim()) return false;
 
   // Cancel any utterance already in flight so rapid taps don't queue up and
@@ -44,8 +44,22 @@ export function speak(text: string, rate = 0.85): boolean {
   if (voice) utterance.voice = voice;
   utterance.lang = voice?.lang ?? 'zh-CN';
   utterance.rate = rate;
+  if (onEnd) {
+    // Fires for a natural finish (onend) as well as being interrupted by
+    // cancel()/an error (onerror) — either way playback has stopped.
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
+  }
   window.speechSynthesis.speak(utterance);
   return true;
+}
+
+export function pauseSpeaking(): void {
+  if (isSpeechSupported()) window.speechSynthesis.pause();
+}
+
+export function resumeSpeaking(): void {
+  if (isSpeechSupported()) window.speechSynthesis.resume();
 }
 
 export function stopSpeaking(): void {

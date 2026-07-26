@@ -11,12 +11,43 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import type { Dictionary, SavedPhrase, ViewName } from './types';
 import './App.css';
 
+// A tab left open across a new deploy still holds index.html referencing
+// hashed chunk filenames that no longer exist on the server once a newer
+// build replaces them, so the dynamic import() below 404s the moment the
+// user first navigates to that tab — this is what actually produced the
+// "goes blank on Practise, need to refresh" reports. A stale-chunk failure
+// isn't recoverable in place (the JS just isn't there), so the fix is a
+// one-time automatic reload to pick up the current index.html/chunks;
+// `sessionReloadedFor` guards against a genuine, repeatable load failure
+// (e.g. offline) causing a refresh loop.
+function withChunkReload<T>(modulePromise: Promise<T>): Promise<T> {
+  return modulePromise
+    .then((mod) => {
+      sessionStorage.removeItem('chunk-reload-attempted');
+      return mod;
+    })
+    .catch((err) => {
+      if (!sessionStorage.getItem('chunk-reload-attempted')) {
+        sessionStorage.setItem('chunk-reload-attempted', '1');
+        window.location.reload();
+        return new Promise<T>(() => {}); // page is reloading; never resolve
+      }
+      throw err;
+    });
+}
+
 // hanzi-writer (stroke-order rendering + quiz grading) is only needed once
 // the user opens Write Test mode, so it's split into its own chunk instead
 // of bloating the initial bundle every visitor downloads.
-const TestMode = lazy(() => import('./components/TestMode').then((m) => ({ default: m.TestMode })));
-const RecallMode = lazy(() => import('./components/RecallMode').then((m) => ({ default: m.RecallMode })));
-const ProgressView = lazy(() => import('./components/ProgressView').then((m) => ({ default: m.ProgressView })));
+const TestMode = lazy(() =>
+  withChunkReload(import('./components/TestMode').then((m) => ({ default: m.TestMode }))),
+);
+const RecallMode = lazy(() =>
+  withChunkReload(import('./components/RecallMode').then((m) => ({ default: m.RecallMode }))),
+);
+const ProgressView = lazy(() =>
+  withChunkReload(import('./components/ProgressView').then((m) => ({ default: m.ProgressView }))),
+);
 
 function App() {
   const [dict, setDict] = useState<Dictionary | null>(null);
