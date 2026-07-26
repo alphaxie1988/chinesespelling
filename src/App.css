@@ -767,6 +767,20 @@
 
 .recall-session {
   width: 100%;
+  padding-bottom: 84px;
+}
+
+.recall-session-header {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.recall-stop-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .recall-card {
@@ -781,37 +795,37 @@
   width: 100%;
 }
 
-.recall-card-text {
-  font-family: var(--hanzi-font);
-  font-size: 44px;
-  text-align: center;
-  word-break: break-word;
-}
-
-.recall-card-hidden {
+.recall-audio-circle {
   border: none;
-  padding: 0;
   cursor: pointer;
   color: var(--primary-dark);
-  font-size: 56px;
-  line-height: 1;
-  width: 120px;
-  height: 120px;
+  min-width: 120px;
+  min-height: 120px;
+  max-width: 100%;
+  padding: 14px 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 999px;
   background: var(--primary-bg);
   transition: transform 0.1s;
 }
 
-.recall-card-hidden:not(:disabled):active {
+.recall-audio-circle:not(:disabled):active {
   transform: scale(0.95);
 }
 
-.recall-card-hidden:disabled {
+.recall-audio-circle:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.recall-audio-circle-text {
+  font-family: var(--hanzi-font);
+  font-size: 32px;
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
 }
 
 .recall-meaning-hint {
@@ -858,9 +872,21 @@
   accent-color: var(--primary);
 }
 
+.recall-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  margin: 0 auto;
+  max-width: 720px;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  box-shadow: 0 -4px 14px rgba(43, 42, 61, 0.12);
+}
+
 .recall-reveal-btn {
   width: 100%;
-  max-width: 280px;
 }
 
 .recall-answer {

@@ -11,6 +11,7 @@ import {
   ScrollText,
   Turtle,
   Volume2,
+  X,
   XCircle,
 } from 'lucide-react';
 import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
@@ -258,59 +259,45 @@ function RecallSession({
 
   return (
     <div className="test-session recall-session">
-      <div className="test-progress">
-        Card {index + 1} of {queue.length}
+      <div className="recall-session-header">
+        <div className="test-progress">
+          Card {index + 1} of {queue.length}
+        </div>
+        <button type="button" className="icon-btn recall-stop-btn" onClick={onExit} aria-label="Stop test">
+          <X size={20} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="recall-card">
-        {revealed ? (
-          <div className="recall-card-text">{current.displayText}</div>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="recall-card-hidden"
-              onClick={() => speak(current.displayText, speed)}
-              disabled={!speechSupported}
-              aria-label="Play audio again"
-            >
-              <Volume2 size={40} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => speak(current.displayText, speed)}
-              disabled={!speechSupported}
-            >
-              <Volume2 size={18} aria-hidden="true" /> Play again
-            </button>
-            <p className="hint-text">Listen, then try to recall how to say and write it.</p>
-            <div className="recall-meaning-hint">
-              <span className="recall-meaning-label">Meaning</span>
-              {chineseSegments.length === 1 ? (
-                <ul className="detail-meanings">
-                  {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
-                    <li key={i}>{m}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="recall-gloss">
-                  {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
-                </p>
-              )}
-            </div>
-          </>
-        )}
+        <button
+          type="button"
+          className="recall-audio-circle"
+          onClick={() => speak(current.displayText, speed)}
+          disabled={!speechSupported}
+          aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
+        >
+          {revealed ? (
+            <span className="recall-audio-circle-text">{current.displayText}</span>
+          ) : (
+            <Volume2 size={40} aria-hidden="true" />
+          )}
+        </button>
 
-        {revealed && (
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => speak(current.displayText, speed)}
-            disabled={!speechSupported}
-          >
-            <Volume2 size={18} aria-hidden="true" /> Play again
-          </button>
+        {!revealed && (
+          <div className="recall-meaning-hint">
+            <span className="recall-meaning-label">Meaning</span>
+            {chineseSegments.length === 1 ? (
+              <ul className="detail-meanings">
+                {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="recall-gloss">
+                {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
+              </p>
+            )}
+          </div>
         )}
 
         <div className="speed-control">
@@ -328,12 +315,6 @@ function RecallSession({
             disabled={!speechSupported}
           />
         </div>
-
-        {!revealed && (
-          <button type="button" className="btn btn-accent recall-reveal-btn" onClick={() => setRevealed(true)}>
-            <Eye size={18} aria-hidden="true" /> Show answer
-          </button>
-        )}
 
         {revealed && (
           <div className="recall-answer">
@@ -365,22 +346,26 @@ function RecallSession({
                 </ul>
               </div>
             )}
-
-            <div className="recall-mark-buttons">
-              <button type="button" className="btn btn-ghost recall-dontknow" onClick={() => handleMark(false)}>
-                <XCircle size={18} aria-hidden="true" /> I don't know it
-              </button>
-              <button type="button" className="btn btn-accent recall-know" onClick={() => handleMark(true)}>
-                <CheckCircle2 size={18} aria-hidden="true" /> I know it
-              </button>
-            </div>
           </div>
         )}
       </div>
 
-      <button type="button" className="btn btn-ghost" onClick={onExit}>
-        Stop test
-      </button>
+      <div className="recall-action-bar">
+        {!revealed ? (
+          <button type="button" className="btn btn-accent recall-reveal-btn" onClick={() => setRevealed(true)}>
+            <Eye size={18} aria-hidden="true" /> Show answer
+          </button>
+        ) : (
+          <div className="recall-mark-buttons">
+            <button type="button" className="btn btn-ghost recall-dontknow" onClick={() => handleMark(false)}>
+              <XCircle size={18} aria-hidden="true" /> I don't know it
+            </button>
+            <button type="button" className="btn btn-accent recall-know" onClick={() => handleMark(true)}>
+              <CheckCircle2 size={18} aria-hidden="true" /> I know it
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
