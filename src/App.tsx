@@ -85,7 +85,7 @@ function App() {
             onClick={() => setView('test')}
           >
             <PenLine size={19} aria-hidden="true" />
-            <span className="nav-label">Write</span>
+            <span className="nav-label">Practise</span>
           </button>
           <button
             type="button"
@@ -93,7 +93,7 @@ function App() {
             onClick={() => setView('recall')}
           >
             <Headphones size={19} aria-hidden="true" />
-            <span className="nav-label">Recall</span>
+            <span className="nav-label">Test</span>
           </button>
           <button
             type="button"
@@ -125,7 +125,7 @@ function App() {
         )}
 
         {view === 'test' && (
-          <Suspense fallback={<p className="loading-state">Loading test mode…</p>}>
+          <Suspense fallback={<p className="loading-state">Loading Practise…</p>}>
             <TestMode
               savedPhrases={savedPhrases}
               phrase={testPhrase}
@@ -136,7 +136,7 @@ function App() {
         )}
 
         {dict && view === 'recall' && (
-          <Suspense fallback={<p className="loading-state">Loading recall mode…</p>}>
+          <Suspense fallback={<p className="loading-state">Loading Test…</p>}>
             <RecallMode savedPhrases={savedPhrases} dict={dict} onGoToReader={() => setView('reader')} />
           </Suspense>
         )}

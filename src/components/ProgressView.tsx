@@ -103,7 +103,7 @@ export function ProgressView() {
 
       {!hasActivity && (
         <p className="empty-state">
-          No activity yet — try the <strong>Recall</strong> or <strong>Write</strong> tabs to start earning XP!
+          No activity yet — try the <strong>Test</strong> or <strong>Practise</strong> tabs to start earning XP!
         </p>
       )}
     </div>

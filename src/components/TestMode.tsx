@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HanziWriter from 'hanzi-writer';
-import { Bookmark, CheckCircle2, PartyPopper, PenLine, Sparkles, Volume2 } from 'lucide-react';
+import { Bookmark, CheckCircle2, PartyPopper, PenLine, Sparkles, Volume2, X } from 'lucide-react';
 import { isChineseChar } from '../lib/segment';
 import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
@@ -45,7 +45,7 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
               <li key={p.id} className="saved-row">
                 <span className="saved-text">{p.text}</span>
                 <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
-                  <PenLine size={16} aria-hidden="true" /> Test
+                  <PenLine size={16} aria-hidden="true" /> Practise
                 </button>
               </li>
             ))}
@@ -75,46 +75,50 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   const [mistakes, setMistakes] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [strokesLeft, setStrokesLeft] = useState<number | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HanziWriter | null>(null);
+  // Guards the quiz callbacks below against firing after this effect's own
+  // cleanup (character/phrase changed, or the component unmounted).
+  const cancelledRef = useRef(false);
 
   const finished = index >= chars.length;
   const currentChar = chars[index];
   const speechSupported = isSpeechSupported();
 
-  useEffect(() => {
-    if (finished || !containerRef.current) return;
-    let cancelled = false;
+  function startQuiz() {
     setMistakes(0);
     setStrokesLeft(null);
+    writerRef.current!.quiz({
+      showHintAfterMisses: 3,
+      onMistake: (strokeData) => {
+        if (cancelledRef.current) return;
+        setMistakes(strokeData.totalMistakes);
+      },
+      onCorrectStroke: (strokeData) => {
+        if (cancelledRef.current) return;
+        setStrokesLeft(strokeData.strokesRemaining);
+      },
+      onComplete: (summary) => {
+        if (cancelledRef.current) return;
+        const correct = summary.totalMistakes === 0;
+        recordTestAttempt({
+          phraseId: phrase.id,
+          char: summary.character,
+          correct,
+          mistakes: summary.totalMistakes,
+          attemptedAt: Date.now(),
+        });
+        setResults((prev) => [...prev, { char: summary.character, correct, mistakes: summary.totalMistakes }]);
+        setTimeout(() => setIndex((i) => i + 1), 1100);
+      },
+    });
+  }
 
-    function startQuiz() {
-      writerRef.current!.quiz({
-        showHintAfterMisses: 3,
-        onMistake: (strokeData) => {
-          if (cancelled) return;
-          setMistakes(strokeData.totalMistakes);
-        },
-        onCorrectStroke: (strokeData) => {
-          if (cancelled) return;
-          setStrokesLeft(strokeData.strokesRemaining);
-        },
-        onComplete: (summary) => {
-          if (cancelled) return;
-          const correct = summary.totalMistakes === 0;
-          recordTestAttempt({
-            phraseId: phrase.id,
-            char: summary.character,
-            correct,
-            mistakes: summary.totalMistakes,
-            attemptedAt: Date.now(),
-          });
-          setResults((prev) => [...prev, { char: summary.character, correct, mistakes: summary.totalMistakes }]);
-          setTimeout(() => setIndex((i) => i + 1), 1100);
-        },
-      });
-    }
+  useEffect(() => {
+    if (finished || !containerRef.current) return;
+    cancelledRef.current = false;
 
     if (!writerRef.current) {
       writerRef.current = HanziWriter.create(containerRef.current, currentChar, {
@@ -129,19 +133,38 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
       startQuiz();
     } else {
       writerRef.current.setCharacter(currentChar).then(() => {
-        if (!cancelled) startQuiz();
+        if (!cancelledRef.current) startQuiz();
       });
     }
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       writerRef.current?.cancelQuiz();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, finished, currentChar, phrase.id]);
 
-  function handleShowMe() {
-    writerRef.current?.animateCharacter();
+  async function handleShowMe() {
+    if (!writerRef.current || isAnimating) return;
+    setIsAnimating(true);
+    writerRef.current.cancelQuiz();
+    // animateCharacter()'s own return value resolves once the animation
+    // *starts*, not when it finishes, so its onComplete callback is the
+    // only reliable "the demo is actually done" signal.
+    await new Promise<void>((resolve) => {
+      writerRef.current!.animateCharacter({ onComplete: () => resolve() });
+    });
+    setIsAnimating(false);
+    // The demo can outlive a character/phrase change (or Stop being tapped)
+    // if it's mid-animation, so don't resurrect a quiz for a stale card.
+    if (cancelledRef.current) return;
+    // Re-set the (same) character rather than calling .quiz() directly on
+    // the same instance — this is the exact path already used when moving
+    // between characters, and it's what actually resets the writer into a
+    // clean, interactive state after the demo animation leaves it showing
+    // a fully-drawn character.
+    await writerRef.current.setCharacter(currentChar);
+    if (!cancelledRef.current) startQuiz();
   }
 
   if (chars.length === 0) {
@@ -190,7 +213,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
               setIndex(0);
             }}
           >
-            Test again
+            Practise again
           </button>
           <button type="button" className="btn btn-primary" onClick={onExit}>
             Choose another phrase
@@ -202,8 +225,13 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
 
   return (
     <div className="test-session">
-      <div className="test-progress">
-        Character {index + 1} of {chars.length} — from "{phrase.text}"
+      <div className="recall-session-header">
+        <div className="test-progress">
+          Character {index + 1} of {chars.length} — from "{phrase.text}"
+        </div>
+        <button type="button" className="icon-btn recall-stop-btn" onClick={onExit} aria-label="Stop practising">
+          <X size={20} aria-hidden="true" />
+        </button>
       </div>
       <div ref={containerRef} className="hanzi-target" />
       <div className="test-status">
@@ -214,11 +242,8 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
         <button type="button" className="btn btn-ghost" onClick={() => speak(currentChar)} disabled={!speechSupported}>
           <Volume2 size={18} aria-hidden="true" /> Hear it
         </button>
-        <button type="button" className="btn btn-ghost" onClick={handleShowMe}>
+        <button type="button" className="btn btn-ghost" onClick={() => void handleShowMe()} disabled={isAnimating}>
           <Sparkles size={18} aria-hidden="true" /> Show me how
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={onExit}>
-          Stop test
         </button>
       </div>
     </div>
