@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Bookmark, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Bookmark, ChevronDown, Trash2 } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
+import { groupByDay } from '../lib/groupByDay';
 import { WordDetailPanel } from './WordDetailPanel';
 import type { Dictionary, SavedPhrase } from '../types';
 
@@ -19,6 +20,7 @@ interface InlineDetail {
 
 export function SavedList({ phrases, dict, onOpen, onDelete }: SavedListProps) {
   const [inlineDetail, setInlineDetail] = useState<InlineDetail | null>(null);
+  const dayGroups = useMemo(() => groupByDay(phrases), [phrases]);
 
   if (phrases.length === 0) {
     return (
@@ -47,25 +49,39 @@ export function SavedList({ phrases, dict, onOpen, onDelete }: SavedListProps) {
 
   return (
     <>
-      <ul className="saved-list">
-        {phrases.map((p) => (
-          <li key={p.id} className="saved-row">
-            <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
-              {p.text}
-            </button>
-            <div className="saved-actions">
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => onDelete(p.id)}
-                aria-label={`Delete "${p.text}"`}
-              >
-                <Trash2 size={18} aria-hidden="true" />
-              </button>
+      <div className="day-groups">
+        {dayGroups.map((group, i) => (
+          <details key={group.key} className="day-group" open={i === 0}>
+            <summary className="day-group-summary">
+              <span className="day-group-summary-left">
+                {group.label} <span className="day-group-count">({group.items.length})</span>
+              </span>
+              <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
+            </summary>
+            <div className="day-group-body">
+              <ul className="saved-list">
+                {group.items.map((p) => (
+                  <li key={p.id} className="saved-row">
+                    <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
+                      {p.text}
+                    </button>
+                    <div className="saved-actions">
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        onClick={() => onDelete(p.id)}
+                        aria-label={`Delete "${p.text}"`}
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </li>
+          </details>
         ))}
-      </ul>
+      </div>
 
       {inlineDetail && (
         <WordDetailPanel

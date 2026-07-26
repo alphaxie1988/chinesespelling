@@ -38,21 +38,27 @@ function padCrop(crop: PixelCrop, image: HTMLImageElement): PixelCrop {
   };
 }
 
-const WHITE_BORDER_PX = 32;
-
 // padCrop only helps when there's more of the *original photo* left to
 // expand into — if the photo itself is basically just the text edge-to-edge
 // (or the crop already covers nearly all of it), there's nothing more to
 // grow into and the underlying edge-touching failure can still happen. This
 // guarantees real blank margin regardless of the source photo, by drawing
 // the (possibly already-padded) image onto a larger white canvas.
+//
+// The border has to scale with the image's own resolution, not be a fixed
+// pixel count — a real phone photo can easily be 3000+ px wide, so a flat
+// ~32px border is barely 1% of that (invisible in a shrunk-down preview,
+// and too thin relative to the photo's own detail for the OCR engine's
+// edge-finding step to treat as real background). 10% of the longer side,
+// with a sane floor/ceiling, keeps it proportionally meaningful either way.
 function addWhiteBorder(imageUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
+      const border = Math.round(Math.min(200, Math.max(48, Math.max(img.naturalWidth, img.naturalHeight) * 0.1)));
       const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth + WHITE_BORDER_PX * 2;
-      canvas.height = img.naturalHeight + WHITE_BORDER_PX * 2;
+      canvas.width = img.naturalWidth + border * 2;
+      canvas.height = img.naturalHeight + border * 2;
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         reject(new Error('Canvas 2D context unavailable'));
@@ -60,7 +66,7 @@ function addWhiteBorder(imageUrl: string): Promise<string> {
       }
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, WHITE_BORDER_PX, WHITE_BORDER_PX);
+      ctx.drawImage(img, border, border);
       resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = () => reject(new Error('Failed to load image for bordering'));

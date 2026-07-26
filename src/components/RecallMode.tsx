@@ -24,6 +24,7 @@ import { isSpeechSupported } from '../lib/speech';
 import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
+import { groupByDay } from '../lib/groupByDay';
 import { FreehandCanvas } from './FreehandCanvas';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
 
@@ -91,6 +92,8 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   useEffect(() => {
     if (!hasSentenceSelected) setSplitMode('words');
   }, [hasSentenceSelected]);
+
+  const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
 
   if (session) {
     return (
@@ -161,16 +164,30 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
       </div>
 
       <div className="recall-phrase-scroll">
-        <ul className="saved-list">
-          {savedPhrases.map((p) => (
-            <li key={p.id} className="saved-row">
-              <label className="recall-checkbox-row">
-                <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
-                <span className="saved-text">{p.text}</span>
-              </label>
-            </li>
+        <div className="day-groups">
+          {dayGroups.map((group, i) => (
+            <details key={group.key} className="day-group" open={i === 0}>
+              <summary className="day-group-summary">
+                <span className="day-group-summary-left">
+                  {group.label} <span className="day-group-count">({group.items.length})</span>
+                </span>
+                <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
+              </summary>
+              <div className="day-group-body">
+                <ul className="saved-list">
+                  {group.items.map((p) => (
+                    <li key={p.id} className="saved-row">
+                      <label className="recall-checkbox-row">
+                        <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
+                        <span className="saved-text">{p.text}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
           ))}
-        </ul>
+        </div>
       </div>
 
       {hasSentenceSelected && (

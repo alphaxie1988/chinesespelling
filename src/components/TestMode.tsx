@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HanziWriter from 'hanzi-writer';
-import { Bookmark, CheckCircle2, PartyPopper, PenLine, Sparkles, Volume2, X } from 'lucide-react';
+import { Bookmark, CheckCircle2, ChevronDown, PartyPopper, PenLine, Sparkles, Volume2, X } from 'lucide-react';
 import { isChineseChar } from '../lib/segment';
 import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { recordTestAttempt } from '../lib/storage';
+import { groupByDay } from '../lib/groupByDay';
 import type { SavedPhrase } from '../types';
 
 interface TestModeProps {
@@ -27,6 +28,8 @@ function uniqueChineseChars(text: string): string[] {
 }
 
 export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: TestModeProps) {
+  const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
+
   if (!phrase) {
     return (
       <div className="test-picker">
@@ -39,16 +42,30 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
             first.
           </p>
         ) : (
-          <ul className="saved-list">
-            {savedPhrases.map((p) => (
-              <li key={p.id} className="saved-row">
-                <span className="saved-text">{p.text}</span>
-                <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
-                  <PenLine size={16} aria-hidden="true" /> Practise
-                </button>
-              </li>
+          <div className="day-groups">
+            {dayGroups.map((group, i) => (
+              <details key={group.key} className="day-group" open={i === 0}>
+                <summary className="day-group-summary">
+                  <span className="day-group-summary-left">
+                    {group.label} <span className="day-group-count">({group.items.length})</span>
+                  </span>
+                  <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
+                </summary>
+                <div className="day-group-body">
+                  <ul className="saved-list">
+                    {group.items.map((p) => (
+                      <li key={p.id} className="saved-row">
+                        <span className="saved-text">{p.text}</span>
+                        <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
+                          <PenLine size={16} aria-hidden="true" /> Practise
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </details>
             ))}
-          </ul>
+          </div>
         )}
         {savedPhrases.length === 0 && (
           <button type="button" className="btn btn-primary" onClick={onGoToReader}>
