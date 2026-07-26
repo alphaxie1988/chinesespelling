@@ -74,6 +74,23 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   const [randomOrder, setRandomOrder] = useState(false);
   const [session, setSession] = useState<{ key: number; cards: RecallCard[] } | null>(null);
 
+  // "Split into words" vs "whole sentences" only produces a different result
+  // once at least one selected item actually has more than one word — for a
+  // single-word save either mode looks identical, so there's nothing to ask.
+  // These must stay above the early returns below — hooks can't be called
+  // conditionally, and session/savedPhrases.length change across renders.
+  const hasSentenceSelected = useMemo(
+    () =>
+      savedPhrases.some(
+        (p) => selectedIds.has(p.id) && segmentAndAnnotate(p.text, dict).filter((s) => s.isChinese).length > 1,
+      ),
+    [savedPhrases, selectedIds, dict],
+  );
+
+  useEffect(() => {
+    if (!hasSentenceSelected) setSplitMode('words');
+  }, [hasSentenceSelected]);
+
   if (session) {
     return (
       <RecallSession
@@ -112,21 +129,6 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
       return next;
     });
   }
-
-  // "Split into words" vs "whole sentences" only produces a different result
-  // once at least one selected item actually has more than one word — for a
-  // single-word save either mode looks identical, so there's nothing to ask.
-  const hasSentenceSelected = useMemo(
-    () =>
-      savedPhrases.some(
-        (p) => selectedIds.has(p.id) && segmentAndAnnotate(p.text, dict).filter((s) => s.isChinese).length > 1,
-      ),
-    [savedPhrases, selectedIds, dict],
-  );
-
-  useEffect(() => {
-    if (!hasSentenceSelected) setSplitMode('words');
-  }, [hasSentenceSelected]);
 
   function startSession() {
     const selected = savedPhrases.filter((p) => selectedIds.has(p.id));
