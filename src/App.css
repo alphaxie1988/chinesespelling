@@ -745,12 +745,12 @@
 /* Recall mode */
 
 .split-toggle {
-  display: flex;
-  gap: 8px;
   background: var(--surface);
-  border-radius: 14px;
-  padding: 6px;
   box-shadow: var(--shadow);
+  border-radius: 15px 15px 0px 0px;
+  gap: 8px;
+  padding: 6px;
+  display: flex;
 }
 
 .toggle-btn {
@@ -777,15 +777,14 @@
 /* Only shown once a selected phrase actually has more than one word — pops
    up from the (fixed) Start Test button just below it. */
 .split-toggle-pop {
+  z-index: 29;
+  margin: 0 auto;
+  animation: 0.22s ease-out split-toggle-pop-in;
   position: fixed;
+  bottom: 68px;
   left: 0;
   right: 0;
-  bottom: 84px;
-  z-index: 29;
   max-width: 720px;
-  margin: 0 auto;
-  padding: 0 20px;
-  animation: split-toggle-pop-in 0.22s ease-out;
 }
 
 @keyframes split-toggle-pop-in {
