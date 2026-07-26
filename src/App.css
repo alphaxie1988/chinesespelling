@@ -200,16 +200,20 @@
   gap: 14px;
 }
 
+.reader-input-wrap {
+  position: relative;
+}
+
 .reader-input {
   width: 100%;
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 14px 44px 14px 16px;
   font-size: 20px;
   font-family: var(--hanzi-font);
-  resize: vertical;
+  resize: none;
   min-height: 90px;
 }
 
@@ -218,10 +222,41 @@
   outline: none;
 }
 
-.reader-toolbar {
+.reader-clear-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-soft);
+  box-shadow: var(--shadow);
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.reader-clear-btn:active {
+  transform: scale(0.9);
+}
+
+.reader-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.reader-toolbar .btn {
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .reader-toolbar {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .segments {
@@ -411,6 +446,32 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.test-picker {
+  padding-bottom: 84px;
+}
+
+.recall-phrase-scroll {
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.recall-start-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  margin: 0 auto;
+  max-width: 720px;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  box-shadow: 0 -4px 14px rgba(43, 42, 61, 0.12);
+}
+
+.recall-start-bar .btn {
+  width: 100%;
 }
 
 .test-session {
@@ -728,6 +789,10 @@
 }
 
 .recall-card-hidden {
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--primary-dark);
   font-size: 56px;
   line-height: 1;
   width: 120px;
@@ -737,6 +802,16 @@
   justify-content: center;
   border-radius: 50%;
   background: var(--primary-bg);
+  transition: transform 0.1s;
+}
+
+.recall-card-hidden:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+.recall-card-hidden:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .recall-meaning-hint {

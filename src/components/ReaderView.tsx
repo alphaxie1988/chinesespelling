@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Bookmark, CheckCircle2, Grid2x2, Volume2 } from 'lucide-react';
+import { Bookmark, CheckCircle2, Grid2x2, Volume2, X } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { CameraScan } from './CameraScan';
@@ -65,16 +65,31 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
 
   return (
     <div className="reader">
-      <textarea
-        className="reader-input"
-        placeholder="粘贴中文短语或句子… (Paste a Chinese phrase or sentence here)"
-        value={text}
-        onChange={(e) => {
-          onTextChange(e.target.value);
-          setSelected(null);
-        }}
-        rows={4}
-      />
+      <div className="reader-input-wrap">
+        <textarea
+          className="reader-input"
+          placeholder="粘贴中文短语或句子… (Paste a Chinese phrase or sentence here)"
+          value={text}
+          onChange={(e) => {
+            onTextChange(e.target.value);
+            setSelected(null);
+          }}
+          rows={4}
+        />
+        {hasText && (
+          <button
+            type="button"
+            className="reader-clear-btn"
+            onClick={() => {
+              onTextChange('');
+              setSelected(null);
+            }}
+            aria-label="Clear text"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        )}
+      </div>
 
       <div className="reader-toolbar">
         <CameraScan
@@ -111,9 +126,6 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
               Split into words
             </>
           )}
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={() => { onTextChange(''); setSelected(null); }} disabled={!hasText}>
-          Clear
         </button>
       </div>
 

@@ -132,20 +132,24 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         </button>
       </div>
 
-      <ul className="saved-list">
-        {savedPhrases.map((p) => (
-          <li key={p.id} className="saved-row">
-            <label className="recall-checkbox-row">
-              <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
-              <span className="saved-text">{p.text}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
+      <div className="recall-phrase-scroll">
+        <ul className="saved-list">
+          {savedPhrases.map((p) => (
+            <li key={p.id} className="saved-row">
+              <label className="recall-checkbox-row">
+                <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
+                <span className="saved-text">{p.text}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <button type="button" className="btn btn-primary" onClick={startSession} disabled={selectedIds.size === 0}>
-        <Play size={18} aria-hidden="true" /> Start test ({selectedIds.size} selected)
-      </button>
+      <div className="recall-start-bar">
+        <button type="button" className="btn btn-primary" onClick={startSession} disabled={selectedIds.size === 0}>
+          <Play size={18} aria-hidden="true" /> Start test ({selectedIds.size} selected)
+        </button>
+      </div>
     </div>
   );
 }
@@ -263,9 +267,23 @@ function RecallSession({
           <div className="recall-card-text">{current.displayText}</div>
         ) : (
           <>
-            <div className="recall-card-hidden" aria-hidden="true">
-              <Volume2 size={40} />
-            </div>
+            <button
+              type="button"
+              className="recall-card-hidden"
+              onClick={() => speak(current.displayText, speed)}
+              disabled={!speechSupported}
+              aria-label="Play audio again"
+            >
+              <Volume2 size={40} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => speak(current.displayText, speed)}
+              disabled={!speechSupported}
+            >
+              <Volume2 size={18} aria-hidden="true" /> Play again
+            </button>
             <p className="hint-text">Listen, then try to recall how to say and write it.</p>
             <div className="recall-meaning-hint">
               <span className="recall-meaning-label">Meaning</span>
@@ -284,14 +302,16 @@ function RecallSession({
           </>
         )}
 
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => speak(current.displayText, speed)}
-          disabled={!speechSupported}
-        >
-          <Volume2 size={18} aria-hidden="true" /> Play again
-        </button>
+        {revealed && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => speak(current.displayText, speed)}
+            disabled={!speechSupported}
+          >
+            <Volume2 size={18} aria-hidden="true" /> Play again
+          </button>
+        )}
 
         <div className="speed-control">
           <label htmlFor="recall-speed" className="icon-inline">
