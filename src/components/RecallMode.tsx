@@ -382,7 +382,9 @@ function RecallSession({
           </details>
         )}
 
-        <FreehandCanvas key={`${current.id}-${index}`} readOnly={revealed} />
+        {!current.id.startsWith('phrase:') && (
+          <FreehandCanvas key={`${current.id}-${index}`} readOnly={revealed} />
+        )}
 
         {revealed && (
           <div className="recall-answer">
