@@ -1,0 +1,28 @@
+diff --git a/node_modules/@gutenye/ocr-common/build/backend/splitIntoLineImages.js b/node_modules/@gutenye/ocr-common/build/backend/splitIntoLineImages.js
+index f8bcf2d..7f31b18 100644
+--- a/node_modules/@gutenye/ocr-common/build/backend/splitIntoLineImages.js
++++ b/node_modules/@gutenye/ocr-common/build/backend/splitIntoLineImages.js
+@@ -12,6 +12,13 @@ export async function splitIntoLineImages(image, sourceImage) {
+     const hierarchy = new cv.Mat();
+     cv.findContours(src, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+     for (let i = 0; i < contours.size(); i++) {
++        // A single detected region can occasionally produce a degenerate
++        // contour that this offset/reshape pipeline can't handle — e.g. a
++        // very small or thin region like a pinyin annotation, a stray
++        // correction mark, or text sitting flush against the image border.
++        // Skip just that region instead of failing the whole scan over one
++        // bad shape.
++        try {
+         const minSize = 3;
+         const cnt = contours.get(i);
+         const { points, sside } = getMiniBoxes(cnt);
+@@ -48,6 +55,9 @@ export async function splitIntoLineImages(image, sourceImage) {
+             box,
+             image: c,
+         });
++        } catch (err) {
++            console.warn('[ocr] skipping a text region that failed to process:', err);
++        }
+     }
+     src.delete();
+     contours.delete();

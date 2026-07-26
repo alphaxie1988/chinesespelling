@@ -38,6 +38,36 @@ function padCrop(crop: PixelCrop, image: HTMLImageElement): PixelCrop {
   };
 }
 
+const WHITE_BORDER_PX = 32;
+
+// padCrop only helps when there's more of the *original photo* left to
+// expand into — if the photo itself is basically just the text edge-to-edge
+// (or the crop already covers nearly all of it), there's nothing more to
+// grow into and the underlying edge-touching failure can still happen. This
+// guarantees real blank margin regardless of the source photo, by drawing
+// the (possibly already-padded) image onto a larger white canvas.
+function addWhiteBorder(imageUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth + WHITE_BORDER_PX * 2;
+      canvas.height = img.naturalHeight + WHITE_BORDER_PX * 2;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas 2D context unavailable'));
+        return;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, WHITE_BORDER_PX, WHITE_BORDER_PX);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('Failed to load image for bordering'));
+    img.src = imageUrl;
+  });
+}
+
 export function CameraScan({ onConfirm }: CameraScanProps) {
   const [step, setStep] = useState<Step>({ kind: 'idle' });
   const [crop, setCrop] = useState<Crop>(FULL_CROP);
@@ -110,7 +140,11 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     // a second overlapping scan, which is what was actually causing the
     // "keeps tapping / spinner hangs" reports.
     setStep({ kind: 'processing', previewUrl: url });
-    void runOcr(url, url);
+    void (async () => {
+      const bordered = await addWhiteBorder(url);
+      URL.revokeObjectURL(url);
+      await runOcr(bordered, bordered);
+    })();
   }
 
   async function handleConfirmCrop() {
@@ -121,7 +155,9 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     // the whole photo rather than producing a degenerate zero-size crop.
     if (!completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
       setStep({ kind: 'processing', previewUrl: original });
-      await runOcr(original, original);
+      const bordered = await addWhiteBorder(original);
+      URL.revokeObjectURL(original);
+      await runOcr(bordered, bordered);
       return;
     }
 
@@ -130,7 +166,8 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     setStep({ kind: 'processing', previewUrl: original });
     const croppedUrl = await cropToImg(imgRef.current, padCrop(completedCrop, imgRef.current));
     URL.revokeObjectURL(original);
-    await runOcr(croppedUrl, croppedUrl);
+    const bordered = await addWhiteBorder(croppedUrl);
+    await runOcr(bordered, bordered);
   }
 
   function closeOverlay() {
@@ -164,7 +201,6 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileSelected}
         className="visually-hidden"
       />
