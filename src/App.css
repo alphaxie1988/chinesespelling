@@ -751,6 +751,8 @@
 
 .picker-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -849,22 +851,70 @@
   word-break: break-word;
 }
 
-.recall-meaning-hint {
+.recall-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+}
+
+.recall-speed-vertical-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.recall-speed-vertical {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 120px;
+  accent-color: var(--primary);
+}
+
+.recall-speed-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.recall-meaning-accordion {
   width: 100%;
   background: var(--primary-bg);
   border-radius: 14px;
-  padding: 12px 16px;
-  text-align: left;
+  overflow: hidden;
 }
 
-.recall-meaning-label {
-  display: block;
-  font-size: 12px;
+.recall-meaning-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--primary-dark);
-  margin-bottom: 6px;
+}
+
+.recall-meaning-summary::-webkit-details-marker {
+  display: none;
+}
+
+.recall-accordion-chevron {
+  transition: transform 0.15s;
+}
+
+.recall-meaning-accordion[open] .recall-accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.recall-meaning-content {
+  padding: 0 16px 14px;
+  text-align: left;
 }
 
 .recall-gloss {
@@ -873,24 +923,26 @@
   color: var(--text);
 }
 
-.speed-control {
+.recall-canvas-wrap {
   width: 100%;
-  max-width: 280px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.speed-control label {
-  font-size: 14px;
-  color: var(--text-soft);
-  font-weight: 600;
-}
-
-.speed-control input[type='range'] {
+.recall-canvas {
   width: 100%;
-  accent-color: var(--primary);
+  height: 200px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.recall-canvas-clear {
+  align-self: flex-end;
 }
 
 .recall-action-bar {

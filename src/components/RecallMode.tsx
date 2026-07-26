@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Bookmark,
   CheckCircle2,
+  ChevronDown,
   Eye,
   Grid2x2,
   Lightbulb,
@@ -20,6 +21,7 @@ import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
+import { FreehandCanvas } from './FreehandCanvas';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
 
 interface RecallModeProps {
@@ -146,14 +148,13 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         <button type="button" className="btn btn-ghost" onClick={() => setSelectedIds(new Set())}>
           Clear
         </button>
+        <label className="recall-random-toggle">
+          <input type="checkbox" checked={randomOrder} onChange={(e) => setRandomOrder(e.target.checked)} />
+          <span className="icon-inline">
+            <Shuffle size={16} aria-hidden="true" /> Random order
+          </span>
+        </label>
       </div>
-
-      <label className="recall-random-toggle">
-        <input type="checkbox" checked={randomOrder} onChange={(e) => setRandomOrder(e.target.checked)} />
-        <span className="icon-inline">
-          <Shuffle size={16} aria-hidden="true" /> Random order
-        </span>
-      </label>
 
       <div className="recall-phrase-scroll">
         <ul className="saved-list">
@@ -323,52 +324,64 @@ function RecallSession({
       </div>
 
       <div className="recall-card">
-        <button
-          type="button"
-          className="recall-audio-circle"
-          onClick={() => speak(current.displayText, speed)}
-          disabled={!speechSupported}
-          aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
-        >
-          {revealed ? (
-            <span className="recall-audio-circle-text">{current.displayText}</span>
-          ) : (
-            <Volume2 size={40} aria-hidden="true" />
-          )}
-        </button>
+        <div className="recall-top-row">
+          <button
+            type="button"
+            className="recall-audio-circle"
+            onClick={() => speak(current.displayText, speed)}
+            disabled={!speechSupported}
+            aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
+          >
+            {revealed ? (
+              <span className="recall-audio-circle-text">{current.displayText}</span>
+            ) : (
+              <Volume2 size={40} aria-hidden="true" />
+            )}
+          </button>
+
+          <div className="recall-speed-vertical-wrap">
+            <Rabbit size={16} aria-hidden="true" />
+            <input
+              id="recall-speed"
+              type="range"
+              className="recall-speed-vertical"
+              min={0.5}
+              max={1.5}
+              step={0.1}
+              value={speed}
+              onChange={(e) => handleSpeedChange(Number(e.target.value))}
+              disabled={!speechSupported}
+              aria-label="Playback speed"
+            />
+            <Turtle size={16} aria-hidden="true" />
+            <span className="recall-speed-value">{speed.toFixed(1)}x</span>
+          </div>
+        </div>
 
         {!revealed && (
-          <div className="recall-meaning-hint">
-            <span className="recall-meaning-label">Meaning</span>
-            {chineseSegments.length === 1 ? (
-              <ul className="detail-meanings">
-                {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
-                  <li key={i}>{m}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="recall-gloss">
-                {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
-              </p>
-            )}
-          </div>
+          <details className="recall-meaning-accordion">
+            <summary className="recall-meaning-summary">
+              <span className="icon-inline">
+                <ChevronDown size={16} className="recall-accordion-chevron" aria-hidden="true" /> Meaning
+              </span>
+            </summary>
+            <div className="recall-meaning-content">
+              {chineseSegments.length === 1 ? (
+                <ul className="detail-meanings">
+                  {(chineseSegments[0].meanings ?? ['No dictionary entry found.']).map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="recall-gloss">
+                  {chineseSegments.map((s) => s.meanings?.[0] ?? '?').join(' · ')}
+                </p>
+              )}
+            </div>
+          </details>
         )}
 
-        <div className="speed-control">
-          <label htmlFor="recall-speed" className="icon-inline">
-            <Turtle size={16} aria-hidden="true" /> Speed: {speed.toFixed(1)}x <Rabbit size={16} aria-hidden="true" />
-          </label>
-          <input
-            id="recall-speed"
-            type="range"
-            min={0.5}
-            max={1.5}
-            step={0.1}
-            value={speed}
-            onChange={(e) => handleSpeedChange(Number(e.target.value))}
-            disabled={!speechSupported}
-          />
-        </div>
+        <FreehandCanvas key={`${current.id}-${index}`} char={current.displayText} />
 
         {revealed && (
           <div className="recall-answer">
