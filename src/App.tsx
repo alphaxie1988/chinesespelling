@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BookOpen, Bookmark, Headphones, Languages, PenLine, Trophy } from 'lucide-react';
 import { loadDictionary } from './lib/dictionary';
+import { filterToChineseAndPunctuation } from './lib/segment';
 import { primeVoices } from './lib/speech';
 import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
 import { ReaderView } from './components/ReaderView';
@@ -35,13 +36,20 @@ function App() {
     setSavedPhrases(getSavedPhrases());
   }
 
+  // Strips stray non-Chinese text (letters, digits) while keeping
+  // punctuation and line breaks, wherever Reader's text gets set — typing,
+  // pasting, opening a saved phrase, or confirming a camera scan.
+  function handleReaderTextChange(text: string) {
+    setReaderText(filterToChineseAndPunctuation(text));
+  }
+
   function handleSave(text: string) {
     savePhrase(text);
     refreshSaved();
   }
 
   function handleOpenInReader(text: string) {
-    setReaderText(text);
+    handleReaderTextChange(text);
     setView('reader');
   }
 
@@ -117,7 +125,7 @@ function App() {
         {!dict && !dictError && <p className="loading-state">Loading dictionary…</p>}
 
         {dict && view === 'reader' && (
-          <ReaderView dict={dict} text={readerText} onTextChange={setReaderText} onSave={handleSave} />
+          <ReaderView dict={dict} text={readerText} onTextChange={handleReaderTextChange} onSave={handleSave} />
         )}
 
         {dict && view === 'saved' && (

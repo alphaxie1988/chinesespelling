@@ -58,7 +58,9 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     }
     if (uniqueWords.length === 0) return;
 
-    uniqueWords.forEach((word) => onSave(word));
+    // Each save prepends to the top of My List, so saving in reverse order
+    // means the first word ends up on top — matching reading order.
+    [...uniqueWords].reverse().forEach((word) => onSave(word));
     setSplitFlash({ count: uniqueWords.length });
     setTimeout(() => setSplitFlash(null), 1600);
   }
