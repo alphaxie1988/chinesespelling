@@ -8,7 +8,9 @@ import {
   PartyPopper,
   Play,
   Rabbit,
+  RotateCcw,
   ScrollText,
+  Shuffle,
   Turtle,
   Volume2,
   X,
@@ -53,9 +55,19 @@ function buildCards(selected: SavedPhrase[], mode: SplitMode, dict: Dictionary):
   return Array.from(seen.values());
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [splitMode, setSplitMode] = useState<SplitMode>('words');
+  const [randomOrder, setRandomOrder] = useState(false);
   const [session, setSession] = useState<{ key: number; cards: RecallCard[] } | null>(null);
 
   if (session) {
@@ -64,6 +76,8 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         key={session.key}
         initialCards={session.cards}
         dict={dict}
+        randomOrder={randomOrder}
+        onRetestCards={(cards) => setSession((prev) => ({ key: (prev?.key ?? 0) + 1, cards }))}
         onExit={() => setSession(null)}
       />
     );
@@ -98,7 +112,8 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   function startSession() {
     const selected = savedPhrases.filter((p) => selectedIds.has(p.id));
     if (selected.length === 0) return;
-    const cards = buildCards(selected, splitMode, dict);
+    let cards = buildCards(selected, splitMode, dict);
+    if (randomOrder) cards = shuffleArray(cards);
     setSession((prev) => ({ key: (prev?.key ?? 0) + 1, cards }));
   }
 
@@ -133,6 +148,13 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         </button>
       </div>
 
+      <label className="recall-random-toggle">
+        <input type="checkbox" checked={randomOrder} onChange={(e) => setRandomOrder(e.target.checked)} />
+        <span className="icon-inline">
+          <Shuffle size={16} aria-hidden="true" /> Random order
+        </span>
+      </label>
+
       <div className="recall-phrase-scroll">
         <ul className="saved-list">
           {savedPhrases.map((p) => (
@@ -158,10 +180,14 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
 function RecallSession({
   initialCards,
   dict,
+  randomOrder,
+  onRetestCards,
   onExit,
 }: {
   initialCards: RecallCard[];
   dict: Dictionary;
+  randomOrder: boolean;
+  onRetestCards: (cards: RecallCard[]) => void;
   onExit: () => void;
 }) {
   const [queue, setQueue] = useState<RecallCard[]>(initialCards);
@@ -207,7 +233,12 @@ function RecallSession({
         setRetryCounts((r) => ({ ...r, [current.id]: retries + 1 }));
         setQueue((q) => {
           const copy = [...q];
-          const insertAt = Math.min(copy.length, index + 3);
+          // Give a missed word real distance before it resurfaces — at
+          // least 5 cards, or halfway through whatever's left, whichever
+          // is bigger — rather than popping back up almost immediately.
+          const remaining = copy.length - index;
+          const gap = Math.max(5, Math.floor(remaining / 2));
+          const insertAt = Math.min(copy.length, index + gap);
           copy.splice(insertAt, 0, current);
           return copy;
         });
@@ -219,6 +250,16 @@ function RecallSession({
   if (finished) {
     const uniqueCards = Array.from(new Map(initialCards.map((c) => [c.id, c])).values());
     const knownCount = uniqueCards.filter((c) => finalResults[c.id]).length;
+    // A card only ever gets requeued after a wrong mark, so "was retried at
+    // least once" is exactly "was wrong on the first attempt" — regardless
+    // of whether it was eventually gotten right.
+    const orangeCards = uniqueCards.filter((c) => (retryCounts[c.id] ?? 0) > 0);
+
+    function handleRetestOrange() {
+      if (orangeCards.length === 0) return;
+      onRetestCards(randomOrder ? shuffleArray(orangeCards) : orangeCards);
+    }
+
     return (
       <div className="test-session test-summary">
         <h2 className="icon-inline">
@@ -228,22 +269,35 @@ function RecallSession({
           {knownCount} / {uniqueCards.length} marked "I know it"
         </p>
         <ul className="summary-list">
-          {uniqueCards.map((c) => (
-            <li key={c.id} className={finalResults[c.id] ? 'summary-correct' : 'summary-wrong'}>
-              <span className="summary-char">{c.displayText}</span>
-              <span className="icon-inline">
-                {finalResults[c.id] ? (
-                  <>
-                    <CheckCircle2 size={16} aria-hidden="true" /> Know it
-                  </>
-                ) : (
-                  'Still tricky'
-                )}
-              </span>
-            </li>
-          ))}
+          {uniqueCards.map((c) => {
+            const neededRetry = (retryCounts[c.id] ?? 0) > 0;
+            return (
+              <li key={c.id} className={neededRetry ? 'summary-orange' : 'summary-correct'}>
+                <span className="summary-char">{c.displayText}</span>
+                <span className="icon-inline">
+                  {neededRetry ? (
+                    finalResults[c.id] ? (
+                      'Got it after a retry'
+                    ) : (
+                      'Still tricky'
+                    )
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} aria-hidden="true" /> Know it
+                    </>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
         <div className="test-summary-actions">
+          {orangeCards.length > 0 && (
+            <button type="button" className="btn btn-accent" onClick={handleRetestOrange}>
+              <RotateCcw size={18} aria-hidden="true" /> Retest {orangeCards.length} tricky word
+              {orangeCards.length === 1 ? '' : 's'}
+            </button>
+          )}
           <button type="button" className="btn btn-primary" onClick={onExit}>
             Back to Recall setup
           </button>

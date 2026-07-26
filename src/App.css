@@ -560,6 +560,10 @@
   color: var(--danger);
 }
 
+.summary-orange {
+  color: var(--accent-dark);
+}
+
 .test-summary-actions {
   display: flex;
   gap: 10px;
@@ -759,6 +763,22 @@
 }
 
 .recall-checkbox-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.recall-random-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.recall-random-toggle input {
   width: 20px;
   height: 20px;
   accent-color: var(--primary);
