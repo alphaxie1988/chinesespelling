@@ -66,6 +66,8 @@
 
 .app-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 8px 20px 32px;
 }
 
@@ -477,8 +479,20 @@
   padding-bottom: 148px;
 }
 
+/* Stretches the picker to the full height available below the header so the
+   phrase list (flex:1 below) fills the screen instead of leaving a dead
+   band of empty space above the fixed Start Test bar when there are only a
+   few saved phrases. */
+.recall-picker {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .recall-phrase-scroll {
-  max-height: 45vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

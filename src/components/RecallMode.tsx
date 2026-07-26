@@ -142,7 +142,7 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   }
 
   return (
-    <div className={`test-picker ${hasSentenceSelected ? 'test-picker-with-split' : ''}`}>
+    <div className={`test-picker recall-picker ${hasSentenceSelected ? 'test-picker-with-split' : ''}`}>
       <h2>Listen &amp; Recall</h2>
 
       <div className="picker-actions">
