@@ -88,6 +88,7 @@ export function SavedList({ phrases, dict, onOpen, onDelete }: SavedListProps) {
           text={inlineDetail.text}
           pinyin={inlineDetail.pinyin}
           meanings={inlineDetail.meanings}
+          dict={dict}
           onClose={() => setInlineDetail(null)}
         />
       )}

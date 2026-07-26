@@ -1,16 +1,29 @@
-import { Volume2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Lightbulb, Volume2, X } from 'lucide-react';
 import { speak, isSpeechSupported } from '../lib/speech';
-import { resolveDisplayMeanings } from '../lib/segment';
+import { isChineseChar, resolveDisplayMeanings } from '../lib/segment';
+import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
+import type { Dictionary, DecompositionData } from '../types';
 
 interface WordDetailPanelProps {
   text: string;
   pinyin: string | null;
   meanings: string[] | null;
+  dict: Dictionary;
   onClose: () => void;
 }
 
-export function WordDetailPanel({ text, pinyin, meanings, onClose }: WordDetailPanelProps) {
+export function WordDetailPanel({ text, pinyin, meanings, dict, onClose }: WordDetailPanelProps) {
   const speechSupported = isSpeechSupported();
+  const [decomp, setDecomp] = useState<DecompositionData | null>(null);
+
+  useEffect(() => {
+    loadDecomposition()
+      .then(setDecomp)
+      .catch(() => setDecomp({}));
+  }, []);
+
+  const mnemonics = decomp ? getMnemonicsForText(text, decomp, dict, isChineseChar) : [];
 
   return (
     <>
@@ -41,6 +54,21 @@ export function WordDetailPanel({ text, pinyin, meanings, onClose }: WordDetailP
             <li key={i}>{m}</li>
           ))}
         </ul>
+
+        {mnemonics.length > 0 && (
+          <div className="mnemonic-box">
+            <h3 className="icon-inline">
+              <Lightbulb size={16} aria-hidden="true" /> Creative ways to remember
+            </h3>
+            <ul>
+              {mnemonics.map((m) => (
+                <li key={m.char}>
+                  <strong>{m.char}</strong>: {m.hint ?? 'No breakdown available — make up your own story for this one!'}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </>
   );

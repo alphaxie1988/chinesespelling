@@ -185,6 +185,7 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
           text={segments[selected].text}
           pinyin={segments[selected].pinyin}
           meanings={segments[selected].meanings}
+          dict={dict}
           onClose={() => setSelected(null)}
         />
       )}
