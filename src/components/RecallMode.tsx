@@ -212,9 +212,14 @@ function RecallSession({
   // Absolute offset (within current.displayText) where the utterance
   // currently playing begins, and how far into *that* utterance onboundary
   // has reported reaching — together these say exactly where to pick back
-  // up when the user taps continue.
+  // up when the user taps continue. Not every voice fires onboundary for
+  // Chinese, though, so playStartRef/rateAtPlayRef back that up with a
+  // rough elapsed-time estimate.
   const offsetRef = useRef(0);
   const boundaryRef = useRef(0);
+  const playStartRef = useRef(0);
+  const rateAtPlayRef = useRef(1);
+  const pausedAtRef = useRef(0);
 
   const speechSupported = isSpeechSupported();
   const current = queue[index];
@@ -232,6 +237,8 @@ function RecallSession({
     const gen = ++speechGenRef.current;
     offsetRef.current = offset;
     boundaryRef.current = 0;
+    playStartRef.current = Date.now();
+    rateAtPlayRef.current = rate;
     setIsPaused(false);
     const started = speak(
       current.displayText.slice(offset),
@@ -244,6 +251,20 @@ function RecallSession({
       },
     );
     setIsSpeaking(started);
+  }
+
+  // Some Chinese TTS voices never fire onboundary at all, which would
+  // otherwise make continue always restart from wherever this play() began.
+  // Prefer the real boundary position when we have one; otherwise fall back
+  // to a rough elapsed-time estimate (deliberately biased a bit short, so a
+  // wrong guess replays a beat of what was already heard rather than
+  // skipping ahead and cutting off part of the sentence).
+  function estimateCharsSpoken(remainingLength: number): number {
+    if (boundaryRef.current > 0) return boundaryRef.current;
+    const BASE_MS_PER_CHAR = 330; // ~3 characters/sec at 1.0x, a rough Mandarin TTS pace
+    const elapsedMs = Date.now() - playStartRef.current;
+    const estimated = Math.floor((elapsedMs / (BASE_MS_PER_CHAR / rateAtPlayRef.current)) * 0.85);
+    return Math.max(0, Math.min(estimated, Math.max(0, remainingLength - 1)));
   }
 
   // useLayoutEffect (not useEffect) so `revealed` resets before the browser
@@ -264,16 +285,19 @@ function RecallSession({
   }
 
   function togglePause() {
-    if (!isSpeaking) return;
+    if (!current || !isSpeaking) return;
     if (isPaused) {
-      play(speed, offsetRef.current + boundaryRef.current);
+      play(speed, pausedAtRef.current);
     } else {
       // speechSynthesis.resume() is unreliable across browsers/OSes once
       // paused (a long-standing platform bug), so instead of depending on
-      // it, remember exactly how far onboundary got and re-speak just the
-      // remaining text on continue. Bump the generation first so cancel()'s
-      // resulting onerror (routed to the same onEnd handler) is recognized
-      // as stale and ignored instead of clearing isSpeaking.
+      // it, remember where we got to and re-speak just the remaining text
+      // on continue. Compute that position *now*, at pause time — not when
+      // continue is tapped, since more time will have passed by then. Bump
+      // the generation first so cancel()'s resulting onerror (routed to the
+      // same onEnd handler) is recognized as stale and ignored.
+      const remainingLength = current.displayText.length - offsetRef.current;
+      pausedAtRef.current = offsetRef.current + estimateCharsSpoken(remainingLength);
       speechGenRef.current++;
       stopSpeaking();
       setIsPaused(true);
