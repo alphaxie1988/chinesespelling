@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
@@ -115,8 +115,11 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
   function startSession() {
     const selected = savedPhrases.filter((p) => selectedIds.has(p.id));
     if (selected.length === 0) return;
-    let cards = buildCards(selected, splitMode, dict);
-    if (randomOrder) cards = shuffleArray(cards);
+    // Shuffle which sentence comes first, not the words inside it — so in
+    // "split into words" mode, random order still reads left-to-right
+    // within each sentence, just in a random sentence-to-sentence order.
+    const orderedPhrases = randomOrder ? shuffleArray(selected) : selected;
+    const cards = buildCards(orderedPhrases, splitMode, dict);
     setSession((prev) => ({ key: (prev?.key ?? 0) + 1, cards }));
   }
 
@@ -210,7 +213,10 @@ function RecallSession({
       .catch(() => setDecomp({}));
   }, []);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so `revealed` resets before the browser
+  // paints the new card — otherwise the next word flashes onscreen for a
+  // frame with the *previous* card's revealed=true state still applied.
+  useLayoutEffect(() => {
     if (!finished && current) {
       setRevealed(false);
       speak(current.displayText, speed);
