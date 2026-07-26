@@ -20,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { isChineseChar, resolveDisplayMeanings, segmentAndAnnotate } from '../lib/segment';
-import { speak, isSpeechSupported, pauseSpeaking, resumeSpeaking } from '../lib/speech';
+import { speak, isSpeechSupported, stopSpeaking } from '../lib/speech';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { FreehandCanvas } from './FreehandCanvas';
@@ -209,6 +209,12 @@ function RecallSession({
   // interrupted by a newer one (cancel() fires its onerror) can't clobber
   // isSpeaking for the utterance that's actually playing now.
   const speechGenRef = useRef(0);
+  // Absolute offset (within current.displayText) where the utterance
+  // currently playing begins, and how far into *that* utterance onboundary
+  // has reported reaching — together these say exactly where to pick back
+  // up when the user taps continue.
+  const offsetRef = useRef(0);
+  const boundaryRef = useRef(0);
 
   const speechSupported = isSpeechSupported();
   const current = queue[index];
@@ -221,12 +227,22 @@ function RecallSession({
       .catch(() => setDecomp({}));
   }, []);
 
-  function play(text: string, rate: number) {
+  function play(rate: number, offset = 0) {
+    if (!current) return;
     const gen = ++speechGenRef.current;
+    offsetRef.current = offset;
+    boundaryRef.current = 0;
     setIsPaused(false);
-    const started = speak(text, rate, () => {
-      if (speechGenRef.current === gen) setIsSpeaking(false);
-    });
+    const started = speak(
+      current.displayText.slice(offset),
+      rate,
+      () => {
+        if (speechGenRef.current === gen) setIsSpeaking(false);
+      },
+      (charIndex) => {
+        if (speechGenRef.current === gen) boundaryRef.current = charIndex;
+      },
+    );
     setIsSpeaking(started);
   }
 
@@ -236,7 +252,7 @@ function RecallSession({
   useLayoutEffect(() => {
     if (!finished && current) {
       setRevealed(false);
-      play(current.displayText, speed);
+      play(speed);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
@@ -244,16 +260,22 @@ function RecallSession({
   function handleSpeedChange(rate: number) {
     setSpeed(rate);
     setRecallSpeed(rate);
-    if (current) play(current.displayText, rate);
+    if (current) play(rate);
   }
 
   function togglePause() {
     if (!isSpeaking) return;
     if (isPaused) {
-      resumeSpeaking();
-      setIsPaused(false);
+      play(speed, offsetRef.current + boundaryRef.current);
     } else {
-      pauseSpeaking();
+      // speechSynthesis.resume() is unreliable across browsers/OSes once
+      // paused (a long-standing platform bug), so instead of depending on
+      // it, remember exactly how far onboundary got and re-speak just the
+      // remaining text on continue. Bump the generation first so cancel()'s
+      // resulting onerror (routed to the same onEnd handler) is recognized
+      // as stale and ignored instead of clearing isSpeaking.
+      speechGenRef.current++;
+      stopSpeaking();
       setIsPaused(true);
     }
   }
@@ -363,7 +385,7 @@ function RecallSession({
           <button
             type="button"
             className="recall-audio-circle"
-            onClick={() => play(current.displayText, speed)}
+            onClick={() => play(speed)}
             disabled={!speechSupported}
             aria-label={revealed ? `Play "${current.displayText}" again` : 'Play audio'}
           >

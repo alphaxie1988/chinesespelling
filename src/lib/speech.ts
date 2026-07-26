@@ -32,7 +32,7 @@ export function hasZhVoice(): boolean {
   return pickZhVoice() !== null;
 }
 
-export function speak(text: string, rate = 0.85, onEnd?: () => void): boolean {
+export function speak(text: string, rate = 0.85, onEnd?: () => void, onBoundary?: (charIndex: number) => void): boolean {
   if (!isSpeechSupported() || !text.trim()) return false;
 
   // Cancel any utterance already in flight so rapid taps don't queue up and
@@ -50,16 +50,11 @@ export function speak(text: string, rate = 0.85, onEnd?: () => void): boolean {
     utterance.onend = onEnd;
     utterance.onerror = onEnd;
   }
+  if (onBoundary) {
+    utterance.onboundary = (e) => onBoundary(e.charIndex);
+  }
   window.speechSynthesis.speak(utterance);
   return true;
-}
-
-export function pauseSpeaking(): void {
-  if (isSpeechSupported()) window.speechSynthesis.pause();
-}
-
-export function resumeSpeaking(): void {
-  if (isSpeechSupported()) window.speechSynthesis.resume();
 }
 
 export function stopSpeaking(): void {
