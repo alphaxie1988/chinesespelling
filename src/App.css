@@ -1179,7 +1179,21 @@
 
 .ocr-crop-area img {
   max-width: 100%;
+  /* A bit under the container's own cap (not the same value) so a portrait
+     photo scales down to fit entirely on screen instead of overflowing
+     (forcing a scrollbar and hiding part of the photo while cropping) — the
+     small buffer leaves room for the crop tool's own corner drag handles,
+     which extend a few pixels past the image's edges. */
+  max-height: calc(55vh - 24px);
   display: block;
+}
+
+.ocr-preview-img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
 }
 
 .ocr-line-list {

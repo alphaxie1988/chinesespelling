@@ -10,9 +10,9 @@ interface CameraScanProps {
 type Step =
   | { kind: 'idle' }
   | { kind: 'cropping'; imageUrl: string }
-  | { kind: 'processing' }
+  | { kind: 'processing'; previewUrl: string }
   | { kind: 'review'; lines: string[] }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; previewUrl: string };
 
 // Starts as the whole photo selected, so trimming margins is just dragging
 // the handles inward rather than drawing a selection from scratch.
@@ -60,8 +60,15 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     setStep({ kind: 'cropping', imageUrl: url });
   }
 
-  async function runOcr(imageUrl: string) {
-    setStep({ kind: 'processing' });
+  // previewUrl is shown throughout processing/error so the user can see
+  // exactly what image was actually sent for scanning (handy for figuring
+  // out why a scan failed, or whether a crop came out as expected). It's
+  // deliberately *not* revoked on failure — only once we're done needing it
+  // (a successful scan, or the user dismissing the error/overlay) — unlike
+  // a plain "revoke when this OCR call finishes" approach, which would pull
+  // the image out from under the error view right as it appears.
+  async function runOcr(imageUrl: string, previewUrl: string) {
+    setStep({ kind: 'processing', previewUrl });
     try {
       // onnxruntime-web + the OCR models are several MB — dynamically
       // imported here so they're only ever fetched once someone actually
@@ -72,9 +79,11 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
         setStep({
           kind: 'error',
           message: "Couldn't find any Chinese text in that photo. Try a clearer, well-lit shot.",
+          previewUrl,
         });
         return;
       }
+      URL.revokeObjectURL(previewUrl);
       setStep({ kind: 'review', lines: scanned.map((l) => l.text) });
     } catch (err) {
       // The OCR engine's text-detection step can throw on a tightly-cropped
@@ -87,15 +96,21 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
       setStep({
         kind: 'error',
         message: "Couldn't read that photo. Try a looser crop (leave a little margin around the text), or use the whole photo instead.",
+        previewUrl,
       });
-    } finally {
-      URL.revokeObjectURL(imageUrl);
     }
   }
 
   function handleUseFullPhoto() {
     if (step.kind !== 'cropping') return;
-    void runOcr(step.imageUrl);
+    const url = step.imageUrl;
+    // Switches away from the cropping view immediately, before any async
+    // work — otherwise a second tap while OCR is still starting up re-enters
+    // this handler (step is still 'cropping' from its perspective) and runs
+    // a second overlapping scan, which is what was actually causing the
+    // "keeps tapping / spinner hangs" reports.
+    setStep({ kind: 'processing', previewUrl: url });
+    void runOcr(url, url);
   }
 
   async function handleConfirmCrop() {
@@ -105,17 +120,22 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     // No real selection (e.g. they never touched the handles) — just use
     // the whole photo rather than producing a degenerate zero-size crop.
     if (!completedCrop || completedCrop.width === 0 || completedCrop.height === 0) {
-      await runOcr(original);
+      setStep({ kind: 'processing', previewUrl: original });
+      await runOcr(original, original);
       return;
     }
 
+    // Same immediate lock as handleUseFullPhoto, before the (also async)
+    // cropToImg step — see comment there.
+    setStep({ kind: 'processing', previewUrl: original });
     const croppedUrl = await cropToImg(imgRef.current, padCrop(completedCrop, imgRef.current));
     URL.revokeObjectURL(original);
-    await runOcr(croppedUrl);
+    await runOcr(croppedUrl, croppedUrl);
   }
 
   function closeOverlay() {
     if (step.kind === 'cropping') URL.revokeObjectURL(step.imageUrl);
+    if (step.kind === 'processing' || step.kind === 'error') URL.revokeObjectURL(step.previewUrl);
     setStep({ kind: 'idle' });
   }
 
@@ -182,6 +202,7 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
 
           {step.kind === 'processing' && (
             <div className="ocr-status">
+              <img src={step.previewUrl} alt="Photo being scanned" className="ocr-preview-img" />
               <Loader2 className="spin" size={40} aria-hidden="true" />
               <p>Reading your photo…</p>
             </div>
@@ -189,8 +210,16 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
 
           {step.kind === 'error' && (
             <div className="ocr-status">
+              <img src={step.previewUrl} alt="Photo that was scanned" className="ocr-preview-img" />
               <p className="error-state">{step.message}</p>
-              <button type="button" className="btn btn-ghost" onClick={() => setStep({ kind: 'idle' })}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  URL.revokeObjectURL(step.previewUrl);
+                  setStep({ kind: 'idle' });
+                }}
+              >
                 <RotateCcw size={18} aria-hidden="true" /> Try again
               </button>
             </div>
