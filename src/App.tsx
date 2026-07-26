@@ -120,8 +120,8 @@ function App() {
           <ReaderView dict={dict} text={readerText} onTextChange={setReaderText} onSave={handleSave} />
         )}
 
-        {view === 'saved' && (
-          <SavedList phrases={savedPhrases} onOpen={handleOpenInReader} onDelete={handleDelete} />
+        {dict && view === 'saved' && (
+          <SavedList phrases={savedPhrases} dict={dict} onOpen={handleOpenInReader} onDelete={handleDelete} />
         )}
 
         {view === 'test' && (

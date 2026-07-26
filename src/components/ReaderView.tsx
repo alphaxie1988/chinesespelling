@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Bookmark, CheckCircle2, Grid2x2, Volume2, X } from 'lucide-react';
+import { Bookmark, CheckCircle2, Grid2x2, Volume2 } from 'lucide-react';
 import { segmentAndAnnotate } from '../lib/segment';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { CameraScan } from './CameraScan';
+import { WordDetailPanel } from './WordDetailPanel';
 import type { Dictionary } from '../types';
 
 interface ReaderViewProps {
@@ -150,36 +151,12 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
       )}
 
       {selected !== null && segments[selected] && (
-        <>
-          <div className="detail-backdrop" onClick={() => setSelected(null)} />
-          <div className="detail-panel">
-            <div className="detail-header">
-              <div className="detail-heading">
-                <span className="detail-hanzi">{segments[selected].text}</span>
-                <span className="detail-pinyin">{segments[selected].pinyin}</span>
-              </div>
-              <div className="detail-header-actions">
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => speak(segments[selected]!.text)}
-                  disabled={!speechSupported}
-                  aria-label="Read this word aloud"
-                >
-                  <Volume2 size={20} aria-hidden="true" />
-                </button>
-                <button type="button" className="icon-btn" onClick={() => setSelected(null)} aria-label="Close">
-                  <X size={20} aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-            <ul className="detail-meanings">
-              {(segments[selected].meanings ?? ['No dictionary entry found for this word.']).map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ul>
-          </div>
-        </>
+        <WordDetailPanel
+          text={segments[selected].text}
+          pinyin={segments[selected].pinyin}
+          meanings={segments[selected].meanings}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );
