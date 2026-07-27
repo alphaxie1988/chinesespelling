@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BookOpen, Bookmark, Headphones, Languages, PenLine, Trophy } from 'lucide-react';
+import { BookOpen, Bookmark, ClipboardCheck, Languages, PenLine, Trophy } from 'lucide-react';
 import { loadDictionary } from './lib/dictionary';
 import { filterToChineseAndPunctuation } from './lib/segment';
 import { primeVoices } from './lib/speech';
@@ -132,7 +132,7 @@ function App() {
             className={`nav-btn ${view === 'recall' ? 'nav-btn-active' : ''}`}
             onClick={() => setView('recall')}
           >
-            <Headphones size={19} aria-hidden="true" />
+            <ClipboardCheck size={19} aria-hidden="true" />
             <span className="nav-label">Test</span>
           </button>
           <button

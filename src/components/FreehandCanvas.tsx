@@ -57,7 +57,7 @@ export function FreehandCanvas({ readOnly = false }: FreehandCanvasProps) {
     if (!ctx || !lastPointRef.current) return;
     const point = getPoint(e);
     ctx.strokeStyle = strokeColor();
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 4.2; // 70% of the original 6px stroke width
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -83,8 +83,8 @@ export function FreehandCanvas({ readOnly = false }: FreehandCanvasProps) {
         onPointerLeave={handlePointerUp}
       />
       {!readOnly && (
-        <button type="button" className="btn btn-ghost recall-canvas-clear" onClick={clearCanvas}>
-          <Eraser size={16} aria-hidden="true" /> Clear
+        <button type="button" className="recall-canvas-clear" onClick={clearCanvas} aria-label="Clear drawing">
+          <Eraser size={16} aria-hidden="true" />
         </button>
       )}
     </div>
