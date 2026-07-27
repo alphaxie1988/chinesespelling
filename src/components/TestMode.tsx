@@ -1,18 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HanziWriter from 'hanzi-writer';
 import { Bookmark, CheckCircle2, ChevronDown, PartyPopper, PenLine, Sparkles, Volume2, X } from 'lucide-react';
-import { isChineseChar } from '../lib/segment';
+import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
 import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { recordTestAttempt } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
-import type { SavedPhrase } from '../types';
+import { WordDetailPanel } from './WordDetailPanel';
+import type { Dictionary, SavedPhrase } from '../types';
 
 interface TestModeProps {
   savedPhrases: SavedPhrase[];
   phrase: SavedPhrase | null;
+  dict: Dictionary | null;
   onPickPhrase: (phrase: SavedPhrase | null) => void;
+  onOpenInReader: (text: string) => void;
   onGoToReader: () => void;
+}
+
+interface InlineDetail {
+  text: string;
+  pinyin: string | null;
+  meanings: string[] | null;
 }
 
 function uniqueChineseChars(text: string): string[] {
@@ -27,8 +36,25 @@ function uniqueChineseChars(text: string): string[] {
   return result;
 }
 
-export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: TestModeProps) {
+export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInReader, onGoToReader }: TestModeProps) {
   const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
+  const [inlineDetail, setInlineDetail] = useState<InlineDetail | null>(null);
+
+  // Same behavior as tapping a phrase in My List: a single word shows its
+  // meaning right here, a multi-word sentence opens in Reader instead.
+  function handleTap(text: string) {
+    if (!dict) {
+      onOpenInReader(text);
+      return;
+    }
+    const chineseSegments = segmentAndAnnotate(text, dict).filter((s) => s.isChinese);
+    if (chineseSegments.length === 1) {
+      const seg = chineseSegments[0];
+      setInlineDetail({ text: seg.text, pinyin: seg.pinyin, meanings: seg.meanings });
+    } else {
+      onOpenInReader(text);
+    }
+  }
 
   if (!phrase) {
     return (
@@ -55,7 +81,9 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
                   <ul className="saved-list">
                     {group.items.map((p) => (
                       <li key={p.id} className="saved-row">
-                        <span className="saved-text">{p.text}</span>
+                        <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
+                          {p.text}
+                        </button>
                         <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
                           <PenLine size={16} aria-hidden="true" /> Practise
                         </button>
@@ -71,6 +99,16 @@ export function TestMode({ savedPhrases, phrase, onPickPhrase, onGoToReader }: T
           <button type="button" className="btn btn-primary" onClick={onGoToReader}>
             Go to Reader
           </button>
+        )}
+
+        {inlineDetail && dict && (
+          <WordDetailPanel
+            text={inlineDetail.text}
+            pinyin={inlineDetail.pinyin}
+            meanings={inlineDetail.meanings}
+            dict={dict}
+            onClose={() => setInlineDetail(null)}
+          />
         )}
       </div>
     );

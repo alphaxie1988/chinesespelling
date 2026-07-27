@@ -170,7 +170,9 @@ function App() {
               <TestMode
                 savedPhrases={savedPhrases}
                 phrase={testPhrase}
+                dict={dict}
                 onPickPhrase={handleTestPhrase}
+                onOpenInReader={handleOpenInReader}
                 onGoToReader={() => setView('reader')}
               />
             </Suspense>
