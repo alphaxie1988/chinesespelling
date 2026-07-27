@@ -1,4 +1,5 @@
 import { pinyin } from 'pinyin-pro';
+import './pinyinOverrides';
 import type { AnnotatedSegment, Dictionary } from '../types';
 
 // Longest dictionary entry (in characters) that segmentation will try to
@@ -37,15 +38,15 @@ function isPunctuationOrSpace(char: string): boolean {
   if (cp >= 0x3000 && cp <= 0x303f) return true; // CJK Symbols and Punctuation
   if (cp >= 0x2000 && cp <= 0x206f) return true; // General Punctuation (em dash, ellipsis, curly quotes...)
   if (EXTRA_CJK_PUNCTUATION.has(char)) return true;
-  if (cp <= 0x7e && /[!-/:-@[-`{-~]/.test(char)) return true; // ASCII punctuation
   return false;
 }
 
 /**
- * Strips anything that isn't a Chinese character, punctuation (Chinese or
- * Western), or whitespace/line breaks — e.g. stray English words mixed into
- * pasted or OCR'd text — while leaving line breaks intact so multi-line
- * pastes still save as separate phrases.
+ * Strips anything that isn't a Chinese character, Chinese-style punctuation,
+ * or whitespace/line breaks — e.g. stray English words *and* half-width
+ * English punctuation (,.!?()) mixed into pasted or OCR'd text, so a kid
+ * only ever sees the full-width Chinese forms (，。！？（）) — while leaving
+ * line breaks intact so multi-line pastes still save as separate phrases.
  */
 export function filterToChineseAndPunctuation(text: string): string {
   return Array.from(text)

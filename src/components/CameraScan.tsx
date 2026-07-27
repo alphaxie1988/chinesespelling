@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Check, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, Upload, X } from 'lucide-react';
 import ReactCrop, { cropToImg, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -81,7 +81,7 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  function handleOpenCamera() {
+  function handleOpenFilePicker() {
     fileInputRef.current?.click();
   }
 
@@ -210,8 +210,8 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
         onChange={handleFileSelected}
         className="visually-hidden"
       />
-      <button type="button" className="btn btn-ghost" onClick={handleOpenCamera}>
-        <Camera size={18} aria-hidden="true" /> Scan a list
+      <button type="button" className="btn btn-ghost" onClick={handleOpenFilePicker}>
+        <Upload size={18} aria-hidden="true" /> Upload a list
       </button>
 
       {step.kind !== 'idle' && (

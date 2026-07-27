@@ -134,6 +134,17 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     });
   }
 
+  function toggleDaySelected(ids: string[], checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+
   function startSession() {
     const selected = savedPhrases.filter((p) => selectedIds.has(p.id));
     if (selected.length === 0) return;
@@ -165,28 +176,43 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
 
       <div className="recall-phrase-scroll">
         <div className="day-groups">
-          {dayGroups.map((group, i) => (
-            <details key={group.key} className="day-group" open={i === 0}>
-              <summary className="day-group-summary">
-                <span className="day-group-summary-left">
-                  {group.label} <span className="day-group-count">({group.items.length})</span>
-                </span>
-                <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
-              </summary>
-              <div className="day-group-body">
-                <ul className="saved-list">
-                  {group.items.map((p) => (
-                    <li key={p.id} className="saved-row">
-                      <label className="recall-checkbox-row">
-                        <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
-                        <span className="saved-text">{p.text}</span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </details>
-          ))}
+          {dayGroups.map((group, i) => {
+            const dayIds = group.items.map((p) => p.id);
+            const allSelected = dayIds.every((id) => selectedIds.has(id));
+            const someSelected = !allSelected && dayIds.some((id) => selectedIds.has(id));
+            return (
+              <details key={group.key} className="day-group" open={i === 0}>
+                <summary className="day-group-summary">
+                  <span className="day-group-summary-left">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someSelected;
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => toggleDaySelected(dayIds, e.target.checked)}
+                      aria-label={`Select all phrases from ${group.label}`}
+                    />
+                    {group.label} <span className="day-group-count">({group.items.length})</span>
+                  </span>
+                  <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
+                </summary>
+                <div className="day-group-body">
+                  <ul className="saved-list">
+                    {group.items.map((p) => (
+                      <li key={p.id} className="saved-row">
+                        <label className="recall-checkbox-row">
+                          <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelected(p.id)} />
+                          <span className="saved-text">{p.text}</span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </details>
+            );
+          })}
         </div>
       </div>
 
@@ -422,6 +448,16 @@ function RecallSession({
             <span className="recall-speed-value">{speed.toFixed(1)}x</span>
           </div>
         </div>
+
+        {!revealed && (
+          <div className="recall-pinyin-hint">
+            {chineseSegments.map((s, i) => (
+              <span key={i} className="recall-pinyin-hint-word">
+                {s.pinyin}
+              </span>
+            ))}
+          </div>
+        )}
 
         {!revealed && (
           <details className="recall-meaning-accordion">
