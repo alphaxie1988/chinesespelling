@@ -498,6 +498,15 @@
   word-break: break-word;
 }
 
+/* Matches .icon-btn's fixed 44px height (used for My List's delete button)
+   so a saved-row's action button is the same height everywhere, keeping My
+   List and Practise visually aligned instead of Practise's default
+   padding-driven .btn height being taller. */
+.saved-row-action-btn {
+  height: 44px;
+  padding: 0 16px;
+}
+
 .saved-text-btn {
   border: none;
   background: transparent;

@@ -84,7 +84,7 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
                         <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
                           {p.text}
                         </button>
-                        <button type="button" className="btn btn-accent" onClick={() => onPickPhrase(p)}>
+                        <button type="button" className="btn btn-accent saved-row-action-btn" onClick={() => onPickPhrase(p)}>
                           <PenLine size={16} aria-hidden="true" /> Practise
                         </button>
                       </li>
