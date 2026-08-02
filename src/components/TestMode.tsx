@@ -287,6 +287,15 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
             type="button"
             className="btn btn-accent"
             onClick={() => {
+              // The hanzi-target container div only exists in the
+              // in-progress quiz view, not this summary screen, so it
+              // unmounted when the quiz finished — but writerRef (a plain
+              // ref) still points at the now-detached HanziWriter instance
+              // bound to that old DOM node. Clearing it forces the effect
+              // below to create a fresh instance against the div that
+              // remounts once index resets, instead of silently drawing
+              // into an element that's no longer on screen.
+              writerRef.current = null;
               setResults([]);
               setIndex(0);
             }}
