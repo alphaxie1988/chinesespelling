@@ -12,6 +12,11 @@ This app bundles the following open datasets as static assets so it can work ful
 - Source: https://github.com/skishore/makemeahanzi (`dictionary.txt`), derived from Unihan and CJKlib, raw data from `scripts/raw/mmh_dictionary.txt`
 - License: GNU Lesser General Public License v3 ([full text](https://www.gnu.org/licenses/lgpl-3.0.txt))
 
+## Tatoeba — example sentences (`public/dict/examples.json`, built by `scripts/build-examples.mjs`)
+
+- Source: [Tatoeba Project](https://tatoeba.org) Mandarin (`cmn`) sentence export, raw data from `scripts/raw/tatoeba_cmn_sentences.tsv`
+- License: [Creative Commons Attribution 2.0 France](https://creativecommons.org/licenses/by/2.0/fr/) — sentences contributed by the Tatoeba community
+
 ## Hanzi Writer character stroke data (`public/hanzi-data/`)
 
 - Source: [hanzi-writer-data](https://github.com/chanind/hanzi-writer-data) npm package, itself derived from the Make Me a Hanzi project's stroke graphics (based on Arphic PL KaitiM GB / UKai fonts)

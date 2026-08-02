@@ -68,6 +68,14 @@ export default defineConfig({
             },
           },
           {
+            urlPattern: /\/dict\/examples\.json$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'example-sentences',
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
             urlPattern: /\/ocr\/.+\.(onnx|txt)$/,
             handler: 'CacheFirst',
             options: {

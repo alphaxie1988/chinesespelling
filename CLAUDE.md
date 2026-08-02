@@ -18,10 +18,11 @@ Deployed as a static site to GitHub Pages at a non-root subpath (`https://<user>
 
 ### Rebuilding generated data assets
 
-Two scripts turn raw third-party data (checked into `scripts/raw/`) into the JSON assets the app fetches at runtime. Re-run them after editing the raw source files or the parsing logic — they are not run automatically by `npm run build`.
+Three scripts turn raw third-party data (checked into `scripts/raw/`) into the JSON assets the app fetches at runtime. Re-run them after editing the raw source files or the parsing logic — they are not run automatically by `npm run build`.
 
 - `node scripts/build-dict.mjs` — parses `scripts/raw/cedict_ts.u8` (CC-CEDICT) into `public/dict/cedict.json`. Filters out classifier annotations and cross-reference-only glosses (`variant of X`, `old variant of X`, `see also X`, or any gloss that just repeats the headword itself) since these aren't useful English meanings for a kid. A word can still end up with an empty definitions array after filtering (e.g. an obscure character whose only CEDICT entries were cross-references) — it's kept in the dictionary anyway (as `[]`, which is truthy) so forward-maximum-matching segmentation still recognizes it as a word; the UI falls back to showing pinyin for those.
 - `node scripts/build-mnemonics.mjs` — parses `scripts/raw/mmh_dictionary.txt` (Make Me a Hanzi) into `public/dict/decomposition.json`, used for "creative way to remember" character mnemonics in Test mode.
+- `node scripts/build-examples.mjs` — parses `scripts/raw/tatoeba_cmn_sentences.tsv` (Tatoeba's Mandarin sentence export) into `public/dict/examples.json`, a word → up to 2 example sentences index used for "Sample sentences" in the word detail panel. Must run after `build-dict.mjs` (reads `public/dict/cedict.json` to know which words to index by, using the same forward-maximum-matching approach as `segmentAndAnnotate`). Tatoeba's `cmn` export mixes Simplified and Traditional Chinese; sentences containing any Traditional-only character (derived from CC-CEDICT's own traditional/simplified word pairs) are excluded, since this app's dictionary/segmentation is Simplified-only. Coverage is inherently partial — only words that appear in a usable Tatoeba sentence get an entry. The raw `.tsv` is a plain-text decompression of the upstream `cmn_sentences.tsv.bz2` (Node has no built-in bzip2 support, so this script expects the already-decompressed file, not the archive).
 
 ### Patched dependencies
 

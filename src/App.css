@@ -1169,6 +1169,53 @@
   color: var(--text);
 }
 
+.example-box {
+  background: var(--primary-bg);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.example-box h3 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.example-box ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.example-sentence-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: none;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.example-sentence-btn:active {
+  opacity: 0.75;
+}
+
+.example-sentence-btn svg {
+  flex-shrink: 0;
+  color: var(--primary-dark);
+}
+
 .recall-mark-buttons {
   display: flex;
   gap: 10px;
