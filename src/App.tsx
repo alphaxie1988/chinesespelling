@@ -66,10 +66,12 @@ function App() {
 
   // Singapore National Day (9 August) seasonal theme — red and white for
   // the whole month, reverting automatically once September starts.
+  const isSgNationalDay = new Date().getMonth() === 7;
   useEffect(() => {
-    if (new Date().getMonth() === 7) {
+    if (isSgNationalDay) {
       document.documentElement.dataset.theme = 'sg-national-day';
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function refreshSaved() {
@@ -109,6 +111,11 @@ function App() {
       <header className="app-header">
         <h1 className="app-title">
           <Languages aria-hidden="true" size={24} /> Chinese Spelling Buddy
+          {isSgNationalDay && (
+            <span role="img" aria-label="Singapore flag" title="Happy National Day, Singapore!">
+              🇸🇬
+            </span>
+          )}
         </h1>
         <nav className="app-nav">
           <button
