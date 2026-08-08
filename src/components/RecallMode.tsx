@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
@@ -9,6 +9,7 @@ import {
   Lightbulb,
   Pause,
   PartyPopper,
+  PenLine,
   Play,
   Rabbit,
   RotateCcw,
@@ -25,7 +26,7 @@ import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
-import { FreehandCanvas } from './FreehandCanvas';
+import { FreehandCanvas, type FreehandCanvasHandle } from './FreehandCanvas';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
 
 interface RecallModeProps {
@@ -262,6 +263,11 @@ function RecallSession({
   const [revealed, setRevealed] = useState(false);
   const [finalResults, setFinalResults] = useState<Record<string, boolean>>({});
   const [retryCounts, setRetryCounts] = useState<Record<string, number>>({});
+  // One snapshot per attempt, oldest first, so a retried word's later
+  // attempts sit after its earlier ones — captured just before moving on
+  // (see handleMark), not persisted anywhere beyond this session.
+  const [drawings, setDrawings] = useState<Record<string, string[]>>({});
+  const canvasHandleRef = useRef<FreehandCanvasHandle>(null);
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
   const [speed, setSpeed] = useState(() => getRecallSpeed());
   const { isSpeaking, isPaused, play: playText, togglePause: togglePausePlayback } = useSpeechPlayback();
@@ -307,6 +313,15 @@ function RecallSession({
     recordRecallAttempt({ cardId: current.id, text: current.displayText, know, attemptedAt: Date.now() });
     setFinalResults((r) => ({ ...r, [current.id]: know }));
 
+    // Word-mode cards only — sentence cards don't render a canvas at all.
+    // Captured now (not on an interval) since this is the exact moment the
+    // student is done with this attempt, whether they got it right or need
+    // another try.
+    const snapshot = canvasHandleRef.current?.getSnapshot();
+    if (snapshot) {
+      setDrawings((d) => ({ ...d, [current.id]: [...(d[current.id] ?? []), snapshot] }));
+    }
+
     if (!know) {
       const retries = retryCounts[current.id] ?? 0;
       if (retries < 2) {
@@ -334,6 +349,9 @@ function RecallSession({
     // least once" is exactly "was wrong on the first attempt" — regardless
     // of whether it was eventually gotten right.
     const orangeCards = uniqueCards.filter((c) => (retryCounts[c.id] ?? 0) > 0);
+    // Sentence cards never render a canvas at all, so they never end up
+    // with anything in `drawings`— no need to filter by id shape here too.
+    const cardsWithDrawings = uniqueCards.filter((c) => (drawings[c.id]?.length ?? 0) > 0);
 
     function handleRetestOrange() {
       if (orangeCards.length === 0) return;
@@ -371,6 +389,45 @@ function RecallSession({
             );
           })}
         </ul>
+
+        {cardsWithDrawings.length > 0 && (
+          <div className="writing-review">
+            <h3 className="icon-inline">
+              <PenLine size={16} aria-hidden="true" /> Your writing
+            </h3>
+            <ul className="writing-review-list">
+              {cardsWithDrawings.map((c) => {
+                const attempts = drawings[c.id];
+                const latest = attempts[attempts.length - 1];
+                const earlier = attempts.slice(0, -1);
+                return (
+                  <li key={c.id} className="writing-review-item">
+                    <span className="summary-char">{c.displayText}</span>
+                    <img src={latest} alt={`Your latest writing of "${c.displayText}"`} className="writing-review-img" />
+                    {earlier.length > 0 && (
+                      <details className="writing-review-earlier">
+                        <summary>
+                          Show earlier tr{earlier.length === 1 ? 'y' : 'ies'} ({earlier.length})
+                        </summary>
+                        <div className="writing-review-earlier-grid">
+                          {earlier.map((snapshot, i) => (
+                            <img
+                              key={i}
+                              src={snapshot}
+                              alt={`Attempt ${i + 1} of "${c.displayText}"`}
+                              className="writing-review-img"
+                            />
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         <div className="test-summary-actions">
           {orangeCards.length > 0 && (
             <button type="button" className="btn btn-accent" onClick={handleRetestOrange}>
@@ -483,7 +540,7 @@ function RecallSession({
         )}
 
         {!current.id.startsWith('phrase:') && (
-          <FreehandCanvas key={`${current.id}-${index}`} readOnly={revealed} />
+          <FreehandCanvas key={`${current.id}-${index}`} ref={canvasHandleRef} readOnly={revealed} />
         )}
 
         {revealed && (

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Eraser } from 'lucide-react';
 
 interface FreehandCanvasProps {
@@ -7,15 +7,29 @@ interface FreehandCanvasProps {
   readOnly?: boolean;
 }
 
+export interface FreehandCanvasHandle {
+  /** A snapshot of the current drawing (data URL), or null if there's
+   * nothing to snapshot (canvas not mounted). Used to save what the
+   * student drew before moving on to the next card. */
+  getSnapshot: () => string | null;
+}
+
 /**
  * A plain freehand scratch-pad — no stroke validation, no grading, and no
  * character guide (that would give away the answer before it's revealed).
  * Just somewhere to doodle with a finger while thinking, purely for fun.
  */
-export function FreehandCanvas({ readOnly = false }: FreehandCanvasProps) {
+export const FreehandCanvas = forwardRef<FreehandCanvasHandle, FreehandCanvasProps>(function FreehandCanvas(
+  { readOnly = false },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    getSnapshot: () => canvasRef.current?.toDataURL('image/png') ?? null,
+  }));
 
   function clearCanvas() {
     const canvas = canvasRef.current;
@@ -89,4 +103,4 @@ export function FreehandCanvas({ readOnly = false }: FreehandCanvasProps) {
       )}
     </div>
   );
-}
+});
