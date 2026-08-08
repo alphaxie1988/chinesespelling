@@ -64,6 +64,14 @@ function App() {
       .catch((err: Error) => setDictError(err.message));
   }, []);
 
+  // Singapore National Day (9 August) seasonal theme — red and white for
+  // the whole month, reverting automatically once September starts.
+  useEffect(() => {
+    if (new Date().getMonth() === 7) {
+      document.documentElement.dataset.theme = 'sg-national-day';
+    }
+  }, []);
+
   function refreshSaved() {
     setSavedPhrases(getSavedPhrases());
   }

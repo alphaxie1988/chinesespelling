@@ -58,6 +58,57 @@
   }
 }
 
+/* Singapore National Day (9 August) seasonal theme — red and white,
+   auto-applied for the whole month of August by App.tsx checking the
+   current date, and removed automatically once September starts. */
+:root[data-theme='sg-national-day'] {
+  --bg: #ffffff;
+  --surface: #fff6f6;
+  --text: #1a1414;
+  --text-soft: #7a5f5f;
+  --border: #f5cdd0;
+
+  --primary: #ef3340;
+  --primary-dark: #c81e2c;
+  --primary-bg: #ffe1e3;
+
+  --accent: #c81e2c;
+  --accent-dark: #8f0d18;
+  --accent-bg: #ffd9db;
+
+  --success: #2fb673;
+  --success-bg: #e3f8ee;
+  --danger: #8f0d18;
+
+  --shadow: 0 6px 18px rgba(239, 51, 64, 0.16);
+  --shadow-lg: 0 12px 28px rgba(239, 51, 64, 0.24);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='sg-national-day'] {
+    --bg: #1a0a0c;
+    --surface: #2b1114;
+    --text: #fdeeee;
+    --text-soft: #d8a8ac;
+    --border: #4a1f22;
+
+    --primary: #ff5b66;
+    --primary-dark: #ff8790;
+    --primary-bg: #3d1519;
+
+    --accent: #ff8790;
+    --accent-dark: #ffb0b6;
+    --accent-bg: #3d1216;
+
+    --success: #45cc8d;
+    --success-bg: #1e3c30;
+    --danger: #ff8790;
+
+    --shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
