@@ -658,17 +658,30 @@
 
 .summary-list li {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
   background: var(--surface);
   border-radius: 12px;
   padding: 10px 14px;
   box-shadow: var(--shadow);
 }
 
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .summary-char {
   font-family: var(--hanzi-font);
   font-size: 24px;
+}
+
+.summary-writing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .summary-correct {
@@ -688,37 +701,6 @@
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-}
-
-.writing-review {
-  width: 100%;
-  text-align: left;
-}
-
-.writing-review > h3 {
-  font-size: 16px;
-  margin-bottom: 10px;
-  justify-content: center;
-}
-
-.writing-review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.writing-review-item {
-  background: var(--surface);
-  border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
 }
 
 .writing-review-img {

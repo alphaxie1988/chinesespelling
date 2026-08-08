@@ -9,7 +9,6 @@ import {
   Lightbulb,
   Pause,
   PartyPopper,
-  PenLine,
   Play,
   Rabbit,
   RotateCcw,
@@ -349,9 +348,6 @@ function RecallSession({
     // least once" is exactly "was wrong on the first attempt" — regardless
     // of whether it was eventually gotten right.
     const orangeCards = uniqueCards.filter((c) => (retryCounts[c.id] ?? 0) > 0);
-    // Sentence cards never render a canvas at all, so they never end up
-    // with anything in `drawings`— no need to filter by id shape here too.
-    const cardsWithDrawings = uniqueCards.filter((c) => (drawings[c.id]?.length ?? 0) > 0);
 
     function handleRetestOrange() {
       if (orangeCards.length === 0) return;
@@ -369,40 +365,29 @@ function RecallSession({
         <ul className="summary-list">
           {uniqueCards.map((c) => {
             const neededRetry = (retryCounts[c.id] ?? 0) > 0;
+            const attempts = drawings[c.id];
+            const latest = attempts?.[attempts.length - 1];
+            const earlier = attempts?.slice(0, -1) ?? [];
             return (
               <li key={c.id} className={neededRetry ? 'summary-orange' : 'summary-correct'}>
-                <span className="summary-char">{c.displayText}</span>
-                <span className="icon-inline">
-                  {neededRetry ? (
-                    finalResults[c.id] ? (
-                      'Got it after a retry'
+                <div className="summary-row">
+                  <span className="summary-char">{c.displayText}</span>
+                  <span className="icon-inline">
+                    {neededRetry ? (
+                      finalResults[c.id] ? (
+                        'Got it after a retry'
+                      ) : (
+                        'Still tricky'
+                      )
                     ) : (
-                      'Still tricky'
-                    )
-                  ) : (
-                    <>
-                      <CheckCircle2 size={16} aria-hidden="true" /> Know it
-                    </>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-
-        {cardsWithDrawings.length > 0 && (
-          <div className="writing-review">
-            <h3 className="icon-inline">
-              <PenLine size={16} aria-hidden="true" /> Your writing
-            </h3>
-            <ul className="writing-review-list">
-              {cardsWithDrawings.map((c) => {
-                const attempts = drawings[c.id];
-                const latest = attempts[attempts.length - 1];
-                const earlier = attempts.slice(0, -1);
-                return (
-                  <li key={c.id} className="writing-review-item">
-                    <span className="summary-char">{c.displayText}</span>
+                      <>
+                        <CheckCircle2 size={16} aria-hidden="true" /> Know it
+                      </>
+                    )}
+                  </span>
+                </div>
+                {latest && (
+                  <div className="summary-writing">
                     <img src={latest} alt={`Your latest writing of "${c.displayText}"`} className="writing-review-img" />
                     {earlier.length > 0 && (
                       <details className="writing-review-earlier">
@@ -421,12 +406,12 @@ function RecallSession({
                         </div>
                       </details>
                     )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
 
         <div className="test-summary-actions">
           {orangeCards.length > 0 && (
