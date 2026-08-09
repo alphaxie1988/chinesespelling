@@ -36,7 +36,7 @@ export default defineConfig({
         // would force everyone to download tens of MB before the app is
         // usable) and instead cached lazily as the user actually visits
         // words/characters, via the runtime caching rules below.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,mp3}'],
         // The OCR feature's JS chunk bundles onnxruntime-web + the OCR
         // pipeline and is multiple MB by itself — like the dictionary/stroke
         // data, it should only be fetched when someone actually uses the

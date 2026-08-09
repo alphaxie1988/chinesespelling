@@ -274,12 +274,38 @@ function RecallSession({
   const speechSupported = isSpeechSupported();
   const current = queue[index];
   const finished = index >= queue.length;
+  // Stable across the whole session (initialCards never changes), reused by
+  // both the perfect-score check below and the summary screen's list.
+  const uniqueCards = useMemo(
+    () => Array.from(new Map(initialCards.map((c) => [c.id, c])).values()),
+    [initialCards],
+  );
+  const summarySoundPlayedRef = useRef(false);
 
   useEffect(() => {
     loadDecomposition()
       .then(setDecomp)
       .catch(() => setDecomp({}));
   }, []);
+
+  // Every card known on the very first try, no retries at all — celebrate
+  // with a sound. Otherwise, if at least one card needed a retry, play a
+  // gentler "keep trying" sound instead. Guarded by a ref (not just
+  // `finished`) so it fires once per session rather than on every re-render
+  // of the summary screen.
+  useEffect(() => {
+    if (!finished || summarySoundPlayedRef.current || uniqueCards.length === 0) return;
+    summarySoundPlayedRef.current = true;
+    const hadAnyRetry = uniqueCards.some((c) => (retryCounts[c.id] ?? 0) > 0);
+    const soundFile = hadAnyRetry
+      ? 'keep-trying.mp3'
+      : uniqueCards.every((c) => finalResults[c.id])
+        ? 'perfect-score.mp3'
+        : null;
+    if (soundFile) {
+      new Audio(`${import.meta.env.BASE_URL}sounds/${soundFile}`).play().catch(() => {});
+    }
+  }, [finished, uniqueCards, finalResults, retryCounts]);
 
   function play(rate: number) {
     if (!current) return;
@@ -342,7 +368,6 @@ function RecallSession({
   }
 
   if (finished) {
-    const uniqueCards = Array.from(new Map(initialCards.map((c) => [c.id, c])).values());
     const knownCount = uniqueCards.filter((c) => finalResults[c.id]).length;
     // A card only ever gets requeued after a wrong mark, so "was retried at
     // least once" is exactly "was wrong on the first attempt" — regardless
