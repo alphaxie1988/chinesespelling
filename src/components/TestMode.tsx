@@ -148,6 +148,20 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   const finished = index >= chars.length;
   const currentChar = chars[index];
   const speechSupported = isSpeechSupported();
+  const summarySoundPlayedRef = useRef(false);
+
+  // Every character written with no mistakes at all — celebrate with a
+  // sound, same as a perfect Test session. If at least one character had a
+  // mistake, play the gentler "keep trying" sound instead. Guarded by a ref
+  // (not just `finished`) so it fires once per attempt, not on every
+  // re-render of the summary screen.
+  useEffect(() => {
+    if (!finished || summarySoundPlayedRef.current || results.length === 0) return;
+    summarySoundPlayedRef.current = true;
+    const hadAnyMistake = results.some((r) => !r.correct);
+    const soundFile = hadAnyMistake ? 'keep-trying.mp3' : 'perfect-score.mp3';
+    new Audio(`${import.meta.env.BASE_URL}sounds/${soundFile}`).play().catch(() => {});
+  }, [finished, results]);
 
   function startQuiz() {
     setMistakes(0);
@@ -296,6 +310,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
               // remounts once index resets, instead of silently drawing
               // into an element that's no longer on screen.
               writerRef.current = null;
+              summarySoundPlayedRef.current = false;
               setResults([]);
               setIndex(0);
             }}
