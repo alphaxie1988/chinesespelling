@@ -594,11 +594,11 @@ function RecallSession({
           </button>
         ) : (
           <div className="recall-mark-buttons">
-            <button type="button" className="btn btn-ghost recall-dontknow" onClick={() => handleMark(false)}>
-              <XCircle size={18} aria-hidden="true" /> I don't know it
-            </button>
             <button type="button" className="btn btn-accent recall-know" onClick={() => handleMark(true)}>
               <CheckCircle2 size={18} aria-hidden="true" /> I know it
+            </button>
+            <button type="button" className="btn btn-ghost recall-dontknow" onClick={() => handleMark(false)}>
+              <XCircle size={18} aria-hidden="true" /> I don't know it
             </button>
           </div>
         )}
