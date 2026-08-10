@@ -1,13 +1,15 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BookOpen, Bookmark, ClipboardCheck, Languages, PenLine, Trophy } from 'lucide-react';
+import { BookOpen, Bookmark, ClipboardCheck, Info, Languages, PenLine, Trophy } from 'lucide-react';
 import { loadDictionary } from './lib/dictionary';
 import { filterToChineseAndPunctuation } from './lib/segment';
 import { primeVoices } from './lib/speech';
-import { deleteSavedPhrase, getSavedPhrases, savePhrase } from './lib/storage';
+import { deleteSavedPhrase, getSavedPhrases, restoreSavedPhrase, savePhrase } from './lib/storage';
 import { ReaderView } from './components/ReaderView';
 import { SavedList } from './components/SavedList';
 import { InstallButton } from './components/InstallButton';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { HelpModal } from './components/HelpModal';
+import { Toast } from './components/Toast';
 import type { Dictionary, SavedPhrase, ViewName } from './types';
 import './App.css';
 
@@ -56,6 +58,8 @@ function App() {
   const [readerText, setReaderText] = useState('');
   const [testPhrase, setTestPhrase] = useState<SavedPhrase | null>(null);
   const [savedPhrases, setSavedPhrases] = useState<SavedPhrase[]>(() => getSavedPhrases());
+  const [showHelp, setShowHelp] = useState(false);
+  const [deleteToast, setDeleteToast] = useState<{ phrase: SavedPhrase; index: number } | null>(null);
 
   useEffect(() => {
     primeVoices();
@@ -101,14 +105,32 @@ function App() {
   }
 
   function handleDelete(id: string) {
+    const index = savedPhrases.findIndex((p) => p.id === id);
+    const phrase = savedPhrases[index];
     deleteSavedPhrase(id);
     refreshSaved();
     if (testPhrase?.id === id) setTestPhrase(null);
+    if (phrase) setDeleteToast({ phrase, index });
+  }
+
+  function handleUndoDelete() {
+    if (!deleteToast) return;
+    restoreSavedPhrase(deleteToast.phrase, deleteToast.index);
+    refreshSaved();
+    setDeleteToast(null);
   }
 
   return (
     <div className="app-shell">
       <header className="app-header">
+        <button
+          type="button"
+          className="icon-btn app-help-btn"
+          onClick={() => setShowHelp(true)}
+          aria-label="How this app works"
+        >
+          <Info size={20} aria-hidden="true" />
+        </button>
         <h1 className="app-title">
           <Languages aria-hidden="true" size={24} /> Chinese Spelling Buddy
           {isSgNationalDay && (
@@ -206,6 +228,18 @@ function App() {
           )}
         </ErrorBoundary>
       </main>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {deleteToast && (
+        <Toast
+          key={deleteToast.phrase.id}
+          message={`Deleted "${deleteToast.phrase.text}"`}
+          actionLabel="Undo"
+          onAction={handleUndoDelete}
+          onDismiss={() => setDeleteToast(null)}
+        />
+      )}
     </div>
   );
 }

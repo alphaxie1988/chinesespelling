@@ -416,6 +416,118 @@
   line-height: 1.6;
 }
 
+/* Help ("i") modal */
+
+.app-help-btn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+}
+
+.help-panel {
+  max-height: 80vh;
+}
+
+.help-title {
+  font-size: 18px;
+}
+
+.help-intro {
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.help-tab-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.help-tab-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.help-tab-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary);
+}
+
+.help-tab-item strong {
+  color: var(--text);
+}
+
+.help-tab-item p {
+  margin: 2px 0 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Toast (undo delete, etc.) */
+
+.toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  max-width: 480px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 10px 10px 16px;
+  box-shadow: var(--shadow-lg);
+  animation: toast-in 0.2s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.toast-message {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.toast-action {
+  border: none;
+  background: transparent;
+  color: var(--primary-dark);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.toast-close {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
 /* Saved list */
 
 .day-groups {

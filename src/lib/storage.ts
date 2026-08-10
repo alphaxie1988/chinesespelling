@@ -51,6 +51,17 @@ export function deleteSavedPhrase(id: string): void {
   localStorage.setItem(PHRASES_KEY, JSON.stringify(phrases));
 }
 
+// Undoes a deleteSavedPhrase call — reinserts at its original index (not
+// just prepended) so an accidental-delete-then-undo leaves the list exactly
+// as it was, since display order within a day follows array order.
+export function restoreSavedPhrase(phrase: SavedPhrase, index: number): void {
+  const phrases = getSavedPhrases();
+  if (phrases.some((p) => p.id === phrase.id)) return;
+  const clampedIndex = Math.min(Math.max(index, 0), phrases.length);
+  const next = [...phrases.slice(0, clampedIndex), phrase, ...phrases.slice(clampedIndex)];
+  localStorage.setItem(PHRASES_KEY, JSON.stringify(next));
+}
+
 export function getTestAttempts(): TestAttemptRecord[] {
   return safeParse<TestAttemptRecord[]>(localStorage.getItem(ATTEMPTS_KEY), []);
 }
