@@ -280,6 +280,16 @@
   }
 }
 
+.reader-save-btn {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.reader-split-btn {
+  border-top-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 .segments {
   display: flex;
   flex-direction: column;
@@ -554,12 +564,29 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* .recall-phrase-scroll is stretched (flex:1) to fill the space above the
+     fixed Start Test bar, so a short list otherwise leaves a blank band
+     below it. Matching this to that stretched height lets the last day
+     group grow into that space below instead of leaving it empty. */
+  min-height: 100%;
 }
 
 .day-group {
   background: var(--primary-bg);
   border-radius: 16px;
   overflow: hidden;
+}
+
+.day-group[open]:last-child {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.day-group[open]:last-child .day-group-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .day-group-summary {

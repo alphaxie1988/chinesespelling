@@ -64,8 +64,8 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
 
   // "Split into words" only makes sense for a line long enough to actually
   // contain more than one word — a line of 5 Chinese characters or fewer
-  // reads as a single short phrase, so the button is hidden unless at least
-  // one pasted line is longer than that.
+  // reads as a single short phrase, so the button stays disabled unless at
+  // least one pasted line is longer than that.
   const hasLongLine = useMemo(
     () =>
       displayLines.some((line) =>
@@ -173,7 +173,12 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
           )}
           Read aloud
         </button>
-        <button type="button" className="btn btn-accent" onClick={handleSave} disabled={!hasText}>
+        <button
+          type="button"
+          className="btn btn-accent reader-save-btn"
+          onClick={handleSave}
+          disabled={!hasText}
+        >
           {savedFlash ? (
             <>
               <CheckCircle2 size={18} aria-hidden="true" />
@@ -186,21 +191,24 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
             </>
           )}
         </button>
-        {hasLongLine && (
-          <button type="button" className="btn btn-accent" onClick={handleSplitSave} disabled={!hasText}>
-            {splitFlash ? (
-              <>
-                <CheckCircle2 size={18} aria-hidden="true" />
-                {splitFlash.count > 1 ? `Saved ${splitFlash.count} words!` : 'Saved!'}
-              </>
-            ) : (
-              <>
-                <Grid2x2 size={18} aria-hidden="true" />
-                Split into words
-              </>
-            )}
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn-accent reader-split-btn"
+          onClick={handleSplitSave}
+          disabled={!hasText || !hasLongLine}
+        >
+          {splitFlash ? (
+            <>
+              <CheckCircle2 size={18} aria-hidden="true" />
+              {splitFlash.count > 1 ? `Saved ${splitFlash.count} words!` : 'Saved!'}
+            </>
+          ) : (
+            <>
+              <Grid2x2 size={18} aria-hidden="true" />
+              Split into words
+            </>
+          )}
+        </button>
       </div>
 
       {!speechSupported && (
