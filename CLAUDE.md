@@ -30,7 +30,9 @@ Three scripts turn raw third-party data (checked into `scripts/raw/`) into the J
 
 Current patches and why:
 - `js-clipper` — a decorative comment in the source has Latin-1-encoded superscript characters that break Vite/Rolldown's strict UTF-8 parsing; replaced with plain ASCII.
-- `@gutenye/ocr-common` — `splitIntoLineImages`'s per-contour processing loop can throw on a degenerate detected region (a very small/thin region — a pinyin annotation, a stray correction mark, text sitting flush against a crop's border) which used to abort the entire scan; wrapped the loop body in try/catch so one bad region is skipped instead.
+- `@gutenye/ocr-common` — two independent fixes in this one patch:
+  - `splitIntoLineImages`'s per-contour processing loop can throw on a degenerate detected region (a very small/thin region — a pinyin annotation, a stray correction mark, text sitting flush against a crop's border) which used to abort the entire scan; wrapped the loop body in try/catch so one bad region is skipped instead.
+  - `Detection.run` resized the photo to a multiple of 32 with no upper bound before running the detection model — fine for a small image, but a real phone photo (4000px+ on the long side) took 50+ seconds to detect and put enough memory pressure on the WASM runtime to risk crashing outright on a memory-constrained mobile browser. Enabled the `maxSize: 1280` cap the upstream code already had written (as a commented-out line) but never turned on — cuts detection to a few seconds with no visible accuracy loss on real worksheet photos.
 
 ### Testing OCR and PWA behavior
 

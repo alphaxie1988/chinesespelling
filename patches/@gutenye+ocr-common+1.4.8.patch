@@ -26,3 +26,21 @@ index f8bcf2d..7f31b18 100644
      }
      src.delete();
      contours.delete();
+diff --git a/node_modules/@gutenye/ocr-common/build/models/Detection.js b/node_modules/@gutenye/ocr-common/build/models/Detection.js
+index 417d9bc..a52c6c5 100644
+--- a/node_modules/@gutenye/ocr-common/build/models/Detection.js
++++ b/node_modules/@gutenye/ocr-common/build/models/Detection.js
+@@ -14,8 +14,11 @@ export class Detection extends ModelBase {
+         // Resize image to multiple of 32
+         //   - image width and height must be a multiple of 32
+         //   - bigger image -> more accurate result, but takes longer time
+-        // inputImage = await Image.resize(image, multipleOfBaseSize(image, { maxSize: 960 }))
+-        const inputImage = await image.resize(multipleOfBaseSize(image));
++        //   - a real phone photo can be 4000px+ on the long side; running
++        //     detection at that size is extremely slow (tens of seconds) and
++        //     memory-heavy enough to risk crashing on a memory-constrained
++        //     mobile browser, so it's capped before detection runs
++        const inputImage = await image.resize(multipleOfBaseSize(image, { maxSize: 1280 }));
+         this.debugImage(inputImage, 'out1-multiple-of-base-size.jpg');
+         // Covert image data to model data
+         //   - Using `(RGB / 255 - mean) / std` formula
