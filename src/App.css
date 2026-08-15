@@ -1256,6 +1256,10 @@
   border-style: solid;
 }
 
+.recall-canvas-large {
+  height: 340px;
+}
+
 .recall-canvas-clear {
   position: absolute;
   right: 10px;

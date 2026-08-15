@@ -5,6 +5,8 @@ interface FreehandCanvasProps {
   /** Freezes the drawing and hides Clear once the answer is revealed, so
    * the student's attempt stays as-is instead of being editable. */
   readOnly?: boolean;
+  /** Taller canvas for longer sentences, which need more room to write. */
+  large?: boolean;
 }
 
 export interface FreehandCanvasHandle {
@@ -20,7 +22,7 @@ export interface FreehandCanvasHandle {
  * Just somewhere to doodle with a finger while thinking, purely for fun.
  */
 export const FreehandCanvas = forwardRef<FreehandCanvasHandle, FreehandCanvasProps>(function FreehandCanvas(
-  { readOnly = false },
+  { readOnly = false, large = false },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,7 +92,7 @@ export const FreehandCanvas = forwardRef<FreehandCanvasHandle, FreehandCanvasPro
     <div className="recall-canvas-wrap">
       <canvas
         ref={canvasRef}
-        className={`recall-canvas ${readOnly ? 'recall-canvas-readonly' : ''}`}
+        className={`recall-canvas ${readOnly ? 'recall-canvas-readonly' : ''} ${large ? 'recall-canvas-large' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

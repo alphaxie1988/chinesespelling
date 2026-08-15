@@ -336,7 +336,6 @@ function RecallSession({
     recordRecallAttempt({ cardId: current.id, text: current.displayText, know, attemptedAt: Date.now() });
     setFinalResults((r) => ({ ...r, [current.id]: know }));
 
-    // Word-mode cards only — sentence cards don't render a canvas at all.
     // Captured now (not on an interval) since this is the exact moment the
     // student is done with this attempt, whether they got it right or need
     // another try.
@@ -455,6 +454,7 @@ function RecallSession({
 
   const mnemonics = decomp ? getMnemonicsForText(current.displayText, decomp, dict, isChineseChar) : [];
   const chineseSegments = current.segments.filter((s) => s.isChinese);
+  const chineseCharCount = chineseSegments.reduce((sum, s) => sum + s.text.length, 0);
 
   return (
     <div className="test-session recall-session">
@@ -547,9 +547,12 @@ function RecallSession({
           </details>
         )}
 
-        {!current.id.startsWith('phrase:') && (
-          <FreehandCanvas key={`${current.id}-${index}`} ref={canvasHandleRef} readOnly={revealed} />
-        )}
+        <FreehandCanvas
+          key={`${current.id}-${index}`}
+          ref={canvasHandleRef}
+          readOnly={revealed}
+          large={chineseCharCount > 5}
+        />
 
         {revealed && (
           <div className="recall-answer">
