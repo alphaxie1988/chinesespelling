@@ -94,9 +94,11 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     if (!hasSentenceSelected) setSplitMode('words');
   }, [hasSentenceSelected]);
 
-  // When every selected item is a short phrase (under 5 Chinese characters),
-  // "sentence" is the wrong word for it — the toggle reads "Whole phrases"
-  // instead. A single long saved item is enough to bring back "sentences".
+  // When every selected item is a short phrase (5 Chinese characters or
+  // fewer), "sentence" is the wrong word for it — the toggle reads "Whole
+  // phrases" instead. A single longer saved item is enough to bring back
+  // "sentences". Matches the >5 cutoff RecallSession uses for the bigger
+  // whiteboard canvas, so "phrase" and "small canvas" mean the same thing.
   const allSelectedShort = useMemo(
     () =>
       savedPhrases
@@ -105,7 +107,7 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
           (p) =>
             segmentAndAnnotate(p.text, dict)
               .filter((s) => s.isChinese)
-              .reduce((sum, s) => sum + s.text.length, 0) < 5,
+              .reduce((sum, s) => sum + s.text.length, 0) <= 5,
         ),
     [savedPhrases, selectedIds, dict],
   );
