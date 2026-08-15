@@ -290,6 +290,20 @@
   box-shadow: var(--shadow);
 }
 
+.segments-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.segments-line-number {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding-bottom: 4px;
+}
+
 .segments-row {
   display: flex;
   flex-wrap: wrap;

@@ -196,25 +196,28 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
       {hasText && (
         <div className="segments" role="list">
           {displayLines.map((line, li) => (
-            <div key={li} className="segments-row">
-              {line.map(({ key, idx, seg }) =>
-                seg.isChinese ? (
-                  <button
-                    type="button"
-                    key={key}
-                    role="listitem"
-                    className={`chip ${selected === idx ? 'chip-selected' : ''} ${idx === readingIndex ? 'chip-reading' : ''}`}
-                    onClick={() => setSelected(selected === idx ? null : idx)}
-                  >
-                    <span className="chip-pinyin">{seg.pinyin}</span>
-                    <span className="chip-hanzi">{seg.text}</span>
-                  </button>
-                ) : (
-                  <span key={key} className="plain-text">
-                    {seg.text}
-                  </span>
-                ),
-              )}
+            <div key={li} className="segments-line">
+              <span className="segments-line-number">{li + 1}.</span>
+              <div className="segments-row">
+                {line.map(({ key, idx, seg }) =>
+                  seg.isChinese ? (
+                    <button
+                      type="button"
+                      key={key}
+                      role="listitem"
+                      className={`chip ${selected === idx ? 'chip-selected' : ''} ${idx === readingIndex ? 'chip-reading' : ''}`}
+                      onClick={() => setSelected(selected === idx ? null : idx)}
+                    >
+                      <span className="chip-pinyin">{seg.pinyin}</span>
+                      <span className="chip-hanzi">{seg.text}</span>
+                    </button>
+                  ) : (
+                    <span key={key} className="plain-text">
+                      {seg.text}
+                    </span>
+                  ),
+                )}
+              </div>
             </div>
           ))}
         </div>
