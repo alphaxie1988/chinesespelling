@@ -131,7 +131,12 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
           placeholder="粘贴中文短语或句子… (Paste a Chinese phrase or sentence here)"
           value={text}
           onChange={(e) => {
-            onTextChange(e.target.value);
+            // Spaces (half- or full-width) become line breaks instead — a
+            // pasted space-separated list of words/phrases then gets the
+            // same per-line treatment (numbering, individual saving, the
+            // word-count-based canvas/split thresholds) as one pasted per
+            // line already gets.
+            onTextChange(e.target.value.replace(/[ 　]+/g, '\n'));
             setSelected(null);
           }}
           rows={4}
