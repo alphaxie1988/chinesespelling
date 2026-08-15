@@ -90,10 +90,6 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     [savedPhrases, selectedIds, dict],
   );
 
-  useEffect(() => {
-    if (!hasSentenceSelected) setSplitMode('words');
-  }, [hasSentenceSelected]);
-
   // When every selected item is a short phrase (5 Chinese characters or
   // fewer), "sentence" is the wrong word for it — the toggle reads "Whole
   // phrases" instead. A single longer saved item is enough to bring back
@@ -111,6 +107,15 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         ),
     [savedPhrases, selectedIds, dict],
   );
+
+  useEffect(() => {
+    // "Split into words" is hidden once every selected item is 5 characters
+    // or fewer (see the button below) — nothing left to pick, so lock to
+    // "sentences"/"phrases" mode. Otherwise fall back to "words" whenever
+    // there's no multi-word item selected, same as before.
+    if (!hasSentenceSelected) setSplitMode('words');
+    else if (allSelectedShort) setSplitMode('sentences');
+  }, [hasSentenceSelected, allSelectedShort]);
 
   const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
 
@@ -237,13 +242,15 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
 
       {hasSentenceSelected && (
         <div className="split-toggle split-toggle-pop" role="radiogroup" aria-label="How to split phrases">
-          <button
-            type="button"
-            className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
-            onClick={() => setSplitMode('words')}
-          >
-            <Grid2x2 size={16} aria-hidden="true" /> Split into words
-          </button>
+          {!allSelectedShort && (
+            <button
+              type="button"
+              className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
+              onClick={() => setSplitMode('words')}
+            >
+              <Grid2x2 size={16} aria-hidden="true" /> Split into words
+            </button>
+          )}
           <button
             type="button"
             className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}

@@ -62,6 +62,18 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     return lines.filter((line) => line.length > 0);
   }, [segments]);
 
+  // "Split into words" only makes sense for a line long enough to actually
+  // contain more than one word — a line of 5 Chinese characters or fewer
+  // reads as a single short phrase, so the button is hidden unless at least
+  // one pasted line is longer than that.
+  const hasLongLine = useMemo(
+    () =>
+      displayLines.some((line) =>
+        line.reduce((sum, item) => sum + (item.seg.isChinese ? item.seg.text.length : 0), 0) > 5,
+      ),
+    [displayLines],
+  );
+
   // If this phrase is a single Chinese word (e.g. opened from "My List"),
   // its meaning is shown right away instead of requiring an extra tap —
   // with more than one word there's no single obvious one to reveal.
@@ -174,19 +186,21 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
             </>
           )}
         </button>
-        <button type="button" className="btn btn-accent" onClick={handleSplitSave} disabled={!hasText}>
-          {splitFlash ? (
-            <>
-              <CheckCircle2 size={18} aria-hidden="true" />
-              {splitFlash.count > 1 ? `Saved ${splitFlash.count} words!` : 'Saved!'}
-            </>
-          ) : (
-            <>
-              <Grid2x2 size={18} aria-hidden="true" />
-              Split into words
-            </>
-          )}
-        </button>
+        {hasLongLine && (
+          <button type="button" className="btn btn-accent" onClick={handleSplitSave} disabled={!hasText}>
+            {splitFlash ? (
+              <>
+                <CheckCircle2 size={18} aria-hidden="true" />
+                {splitFlash.count > 1 ? `Saved ${splitFlash.count} words!` : 'Saved!'}
+              </>
+            ) : (
+              <>
+                <Grid2x2 size={18} aria-hidden="true" />
+                Split into words
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {!speechSupported && (
