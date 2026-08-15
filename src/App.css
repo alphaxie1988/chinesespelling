@@ -584,7 +584,12 @@
   overflow: hidden;
 }
 
-.day-group[open]:last-child {
+/* Grows the last card to fill any leftover height in the (now correctly
+   measured) scroll box — not just when it's open. A closed group only
+   renders its summary row (native <details> hides the rest), but the
+   <details> element itself still stretches, extending its background
+   down instead of leaving blank page background below it. */
+.day-group:last-child {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -725,7 +730,12 @@
 }
 
 .recall-phrase-scroll {
-  flex: 1;
+  /* Not flex:1 — that sets flex-basis:0%, which overrides the `height` set
+     below (by both this fallback and RecallMode's inline style) for sizing
+     purposes in this column flex container, so the box would silently go
+     back to flex-growing to fill .recall-picker's space regardless of what
+     height is specified. flex:none lets the specified height stand as-is. */
+  flex: none;
   min-height: 0;
   overflow-y: auto;
   /* flex:1/min-height:0 alone can't force this to shrink, since none of its
@@ -733,13 +743,19 @@
      just grows to fit content) — without a real ceiling, a long saved-phrase
      list would grow the whole page instead of scrolling in place, which
      would scroll the picker-actions row (Select all/Clear/Random order) and
-     the fixed Start Test bar out of sync with each other. This caps it to
-     whatever's actually left of the viewport — a rough budget for the
-     header/picker-actions (236px) plus whatever test-picker itself is
-     already reserving at the bottom for the fixed Start Test bar/toggle —
-     so it fills that space when short and scrolls internally, never the
-     page, when long. */
-  max-height: calc(100dvh - 268px - var(--picker-bottom-reserve, 84px));
+     the fixed Start Test bar out of sync with each other. RecallMode measures
+     the actual gap (header+picker-actions above, fixed Start Test
+     bar/toggle popup below) and sets this via inline style — a hardcoded
+     pixel budget here drifted out of sync with the real layout (seasonal
+     banner, font metrics, safe-area inset...) and kept leaving a gap.
+     Deliberately `height`, not `max-height`: day-groups/day-group below
+     stretch the last card to fill any leftover space, which needs this box
+     to have a *definite* height to resolve against — a max-height leaves
+     the computed height as content-driven ("auto") whenever content is
+     shorter than the cap, and that stretch silently does nothing. This
+     calc() is only the fallback for the instant before the JS measurement
+     runs. */
+  height: calc(100dvh - 268px - var(--picker-bottom-reserve, 84px));
 }
 
 .recall-start-bar {

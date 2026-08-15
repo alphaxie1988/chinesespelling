@@ -119,6 +119,43 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
 
   const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
 
+  // Measures the real remaining space for the phrase-scroll box instead of
+  // subtracting hardcoded pixel guesses for the header/picker-actions above
+  // it and the fixed Start Test bar (or split-mode toggle popup, whichever
+  // sits higher) below it — those guesses drift out of sync with the actual
+  // rendered layout (a seasonal banner, font metrics, a device's safe-area
+  // inset...) and silently leave a gap between the list and the bar again.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const startBarRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLDivElement>(null);
+  // A definite `height` (not `max-height`) — day-groups/day-group below rely
+  // on percentage/flex sizing to stretch the last card into any leftover
+  // space, which only resolves against a definite height. A `max-height`
+  // alone leaves the box's computed height as "auto" (content-driven)
+  // whenever content is shorter than the cap, so those percentages would
+  // silently resolve to nothing.
+  const [scrollHeight, setScrollHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    function recompute() {
+      if (!scrollRef.current || !startBarRef.current) return;
+      const top = scrollRef.current.getBoundingClientRect().top;
+      const barTop = startBarRef.current.getBoundingClientRect().top;
+      const toggleTop = toggleRef.current?.getBoundingClientRect().top;
+      const ceiling = toggleTop !== undefined ? Math.min(barTop, toggleTop) : barTop;
+      setScrollHeight(Math.max(0, ceiling - top));
+    }
+    recompute();
+    window.addEventListener('resize', recompute);
+    window.addEventListener('orientationchange', recompute);
+    window.visualViewport?.addEventListener('resize', recompute);
+    return () => {
+      window.removeEventListener('resize', recompute);
+      window.removeEventListener('orientationchange', recompute);
+      window.visualViewport?.removeEventListener('resize', recompute);
+    };
+  }, [hasSentenceSelected, allSelectedShort]);
+
   if (session) {
     return (
       <RecallSession
@@ -198,7 +235,11 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         </label>
       </div>
 
-      <div className="recall-phrase-scroll">
+      <div
+        className="recall-phrase-scroll"
+        ref={scrollRef}
+        style={scrollHeight != null ? { height: `${scrollHeight}px` } : undefined}
+      >
         <div className="day-groups">
           {dayGroups.map((group, i) => {
             const dayIds = group.items.map((p) => p.id);
@@ -241,7 +282,12 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
       </div>
 
       {hasSentenceSelected && !allSelectedShort && (
-        <div className="split-toggle split-toggle-pop" role="radiogroup" aria-label="How to split phrases">
+        <div
+          className="split-toggle split-toggle-pop"
+          ref={toggleRef}
+          role="radiogroup"
+          aria-label="How to split phrases"
+        >
           <button
             type="button"
             className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
@@ -259,7 +305,7 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         </div>
       )}
 
-      <div className="recall-start-bar">
+      <div className="recall-start-bar" ref={startBarRef}>
         <button type="button" className="btn btn-primary" onClick={startSession} disabled={selectedIds.size === 0}>
           <Play size={18} aria-hidden="true" /> Start test ({selectedIds.size} selected)
         </button>
