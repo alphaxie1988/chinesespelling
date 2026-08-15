@@ -94,6 +94,22 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
     if (!hasSentenceSelected) setSplitMode('words');
   }, [hasSentenceSelected]);
 
+  // When every selected item is a short phrase (under 5 Chinese characters),
+  // "sentence" is the wrong word for it — the toggle reads "Whole phrases"
+  // instead. A single long saved item is enough to bring back "sentences".
+  const allSelectedShort = useMemo(
+    () =>
+      savedPhrases
+        .filter((p) => selectedIds.has(p.id))
+        .every(
+          (p) =>
+            segmentAndAnnotate(p.text, dict)
+              .filter((s) => s.isChinese)
+              .reduce((sum, s) => sum + s.text.length, 0) < 5,
+        ),
+    [savedPhrases, selectedIds, dict],
+  );
+
   const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
 
   if (session) {
@@ -231,7 +247,7 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
             className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}
             onClick={() => setSplitMode('sentences')}
           >
-            <ScrollText size={16} aria-hidden="true" /> Whole sentences
+            <ScrollText size={16} aria-hidden="true" /> Whole {allSelectedShort ? 'phrases' : 'sentences'}
           </button>
         </div>
       )}
