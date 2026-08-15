@@ -25,6 +25,7 @@ import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
+import { pickSummarySoundFile, playSummarySound } from '../lib/summarySound';
 import { FreehandCanvas, type FreehandCanvasHandle } from './FreehandCanvas';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
 
@@ -288,23 +289,20 @@ function RecallSession({
       .catch(() => setDecomp({}));
   }, []);
 
-  // Every card known on the very first try, no retries at all — celebrate
-  // with a sound. Otherwise, if at least one card needed a retry, play a
-  // gentler "keep trying" sound instead. Guarded by a ref (not just
-  // `finished`) so it fires once per session rather than on every re-render
-  // of the summary screen.
+  // First-try score: a card only counts as correct here if it was known
+  // with zero retries — one that needed a retry (even if eventually gotten
+  // right) doesn't count, same as a mistake in Practise mode never counts.
+  // 100% plays the celebratory sound, 50-99% a "good effort" sound, and
+  // below 50% the gentler "keep trying" sound. Guarded by a ref (not just
+  // `finished`) so it fires once per session rather than on every
+  // re-render of the summary screen.
   useEffect(() => {
     if (!finished || summarySoundPlayedRef.current || uniqueCards.length === 0) return;
     summarySoundPlayedRef.current = true;
-    const hadAnyRetry = uniqueCards.some((c) => (retryCounts[c.id] ?? 0) > 0);
-    const soundFile = hadAnyRetry
-      ? 'keep-trying.mp3'
-      : uniqueCards.every((c) => finalResults[c.id])
-        ? 'perfect-score.mp3'
-        : null;
-    if (soundFile) {
-      new Audio(`${import.meta.env.BASE_URL}sounds/${soundFile}`).play().catch(() => {});
-    }
+    const firstTryCorrect = uniqueCards.filter(
+      (c) => finalResults[c.id] && (retryCounts[c.id] ?? 0) === 0,
+    ).length;
+    playSummarySound(pickSummarySoundFile(firstTryCorrect / uniqueCards.length));
   }, [finished, uniqueCards, finalResults, retryCounts]);
 
   function play(rate: number) {

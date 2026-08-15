@@ -6,6 +6,7 @@ import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { recordTestAttempt } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
+import { pickSummarySoundFile, playSummarySound } from '../lib/summarySound';
 import { WordDetailPanel } from './WordDetailPanel';
 import type { Dictionary, SavedPhrase } from '../types';
 
@@ -150,17 +151,16 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   const speechSupported = isSpeechSupported();
   const summarySoundPlayedRef = useRef(false);
 
-  // Every character written with no mistakes at all — celebrate with a
-  // sound, same as a perfect Test session. If at least one character had a
-  // mistake, play the gentler "keep trying" sound instead. Guarded by a ref
-  // (not just `finished`) so it fires once per attempt, not on every
-  // re-render of the summary screen.
+  // Same three-tier sound as Test mode, based on the fraction of characters
+  // written with zero mistakes: 100% celebratory, 50-99% "good effort",
+  // below 50% the gentler "keep trying" sound. Guarded by a ref (not just
+  // `finished`) so it fires once per attempt, not on every re-render of the
+  // summary screen.
   useEffect(() => {
     if (!finished || summarySoundPlayedRef.current || results.length === 0) return;
     summarySoundPlayedRef.current = true;
-    const hadAnyMistake = results.some((r) => !r.correct);
-    const soundFile = hadAnyMistake ? 'keep-trying.mp3' : 'perfect-score.mp3';
-    new Audio(`${import.meta.env.BASE_URL}sounds/${soundFile}`).play().catch(() => {});
+    const correctCount = results.filter((r) => r.correct).length;
+    playSummarySound(pickSummarySoundFile(correctCount / results.length));
   }, [finished, results]);
 
   function startQuiz() {
