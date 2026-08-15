@@ -240,23 +240,21 @@ export function RecallMode({ savedPhrases, dict, onGoToReader }: RecallModeProps
         </div>
       </div>
 
-      {hasSentenceSelected && (
+      {hasSentenceSelected && !allSelectedShort && (
         <div className="split-toggle split-toggle-pop" role="radiogroup" aria-label="How to split phrases">
-          {!allSelectedShort && (
-            <button
-              type="button"
-              className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
-              onClick={() => setSplitMode('words')}
-            >
-              <Grid2x2 size={16} aria-hidden="true" /> Split into words
-            </button>
-          )}
+          <button
+            type="button"
+            className={`toggle-btn ${splitMode === 'words' ? 'toggle-btn-active' : ''}`}
+            onClick={() => setSplitMode('words')}
+          >
+            <Grid2x2 size={16} aria-hidden="true" /> Split into words
+          </button>
           <button
             type="button"
             className={`toggle-btn ${splitMode === 'sentences' ? 'toggle-btn-active' : ''}`}
             onClick={() => setSplitMode('sentences')}
           >
-            <ScrollText size={16} aria-hidden="true" /> Whole {allSelectedShort ? 'phrases' : 'sentences'}
+            <ScrollText size={16} aria-hidden="true" /> Whole sentences
           </button>
         </div>
       )}
