@@ -302,7 +302,12 @@
 
 .segments-line {
   display: flex;
-  align-items: flex-end;
+  /* flex-end previously put the number level with the row's *last* wrapped
+     sub-row instead of its first — invisible for a short line (one sub-row,
+     top and bottom are the same place), but a long pasted line wraps into
+     several sub-rows within the same .segments-row, and flex-end sinks the
+     number down to sit beside the last one instead of the first. */
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -311,7 +316,9 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-soft);
-  padding-bottom: 4px;
+  /* Nudges the number past the first row's pinyin line so it lines up with
+     the hanzi instead of sitting above it. */
+  padding-top: 22px;
 }
 
 .segments-row {
