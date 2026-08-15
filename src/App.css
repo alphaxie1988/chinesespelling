@@ -282,13 +282,19 @@
 
 .segments {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 10px;
   background: var(--surface);
   border-radius: 16px;
   padding: 16px;
   box-shadow: var(--shadow);
+}
+
+.segments-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-end;
 }
 
 .chip {

@@ -5,7 +5,7 @@ import { isSpeechSupported } from '../lib/speech';
 import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { CameraScan } from './CameraScan';
 import { WordDetailPanel } from './WordDetailPanel';
-import type { Dictionary } from '../types';
+import type { AnnotatedSegment, Dictionary } from '../types';
 
 const READ_ALOUD_RATE = 0.85;
 
@@ -38,6 +38,29 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
     }
     return -1;
   }, [isSpeaking, highlightIndex, segments, segmentOffsets]);
+
+  // Regroups the flat segment list into rows that mirror the line breaks in
+  // the pasted text, so e.g. two separate pasted lines still read as two
+  // separate lines of chips below instead of one long wrapped run. A
+  // non-Chinese segment can itself contain a line break (it's a run of
+  // whitespace/punctuation), so it's what gets split to start a new row —
+  // `idx` stays the original segments index throughout, since that's what
+  // selection/read-aloud highlighting key off of.
+  const displayLines = useMemo(() => {
+    const lines: { key: string; idx: number; seg: AnnotatedSegment }[][] = [[]];
+    segments.forEach((seg, idx) => {
+      if (seg.isChinese) {
+        lines[lines.length - 1].push({ key: `${idx}`, idx, seg });
+        return;
+      }
+      const parts = seg.text.split('\n');
+      parts.forEach((part, partIdx) => {
+        if (part) lines[lines.length - 1].push({ key: `${idx}-${partIdx}`, idx, seg: { ...seg, text: part } });
+        if (partIdx < parts.length - 1) lines.push([]);
+      });
+    });
+    return lines.filter((line) => line.length > 0);
+  }, [segments]);
 
   // If this phrase is a single Chinese word (e.g. opened from "My List"),
   // its meaning is shown right away instead of requiring an extra tap —
@@ -172,24 +195,28 @@ export function ReaderView({ dict, text, onTextChange, onSave }: ReaderViewProps
 
       {hasText && (
         <div className="segments" role="list">
-          {segments.map((seg, idx) =>
-            seg.isChinese ? (
-              <button
-                type="button"
-                key={idx}
-                role="listitem"
-                className={`chip ${selected === idx ? 'chip-selected' : ''} ${idx === readingIndex ? 'chip-reading' : ''}`}
-                onClick={() => setSelected(selected === idx ? null : idx)}
-              >
-                <span className="chip-pinyin">{seg.pinyin}</span>
-                <span className="chip-hanzi">{seg.text}</span>
-              </button>
-            ) : (
-              <span key={idx} className="plain-text">
-                {seg.text}
-              </span>
-            ),
-          )}
+          {displayLines.map((line, li) => (
+            <div key={li} className="segments-row">
+              {line.map(({ key, idx, seg }) =>
+                seg.isChinese ? (
+                  <button
+                    type="button"
+                    key={key}
+                    role="listitem"
+                    className={`chip ${selected === idx ? 'chip-selected' : ''} ${idx === readingIndex ? 'chip-reading' : ''}`}
+                    onClick={() => setSelected(selected === idx ? null : idx)}
+                  >
+                    <span className="chip-pinyin">{seg.pinyin}</span>
+                    <span className="chip-hanzi">{seg.text}</span>
+                  </button>
+                ) : (
+                  <span key={key} className="plain-text">
+                    {seg.text}
+                  </span>
+                ),
+              )}
+            </div>
+          ))}
         </div>
       )}
 
