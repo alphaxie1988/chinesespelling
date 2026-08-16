@@ -58,7 +58,40 @@ const RADICAL_ALIASES: Record<string, string> = {
   '⻌': '辵',
 };
 
+// Short, kid-friendly meanings for the combining radical forms above.
+// CC-CEDICT's own entry for these is either missing, a long "___ radical in
+// Chinese characters (Kangxi radical N), occurring in ..." description, or
+// — via the standalone-character alias — lists an unrelated "surname X"
+// sense first (CEDICT sorts common surnames before the ordinary meaning for
+// several of these: 水/火/金/刀 all open with "surname ..."). None of those
+// are useful to show a kid trying to recognize the shared pattern, so these
+// take priority over any dictionary lookup.
+const RADICAL_MEANINGS: Record<string, string> = {
+  亻: 'person',
+  彳: 'step/walk',
+  氵: 'water',
+  扌: 'hand',
+  灬: 'fire',
+  讠: 'speech',
+  饣: 'food',
+  钅: 'metal',
+  纟: 'silk/thread',
+  忄: 'heart',
+  礻: 'spirit/ritual',
+  衤: 'clothes',
+  辶: 'walk',
+  阝: 'mound/city',
+  艹: 'grass/plant',
+  '⺮': 'bamboo',
+  犭: 'animal',
+  刂: 'knife',
+  '⺈': 'knife',
+  '⻌': 'walk',
+};
+
 function componentMeaning(component: string, dict: Dictionary): string | null {
+  const curated = RADICAL_MEANINGS[component];
+  if (curated) return curated;
   const direct = dict[component];
   if (direct) return direct[0];
   const alias = RADICAL_ALIASES[component];
@@ -96,6 +129,63 @@ export function getCharMnemonic(char: string, decomp: DecompositionData, dict: D
 export interface CharMnemonic {
   char: string;
   hint: string | null;
+}
+
+export interface RadicalGroup {
+  component: string;
+  /** e.g. "氵 (water)" — falls back to the bare component if it (or its
+   * standalone-character alias) has no dictionary gloss to show. */
+  label: string;
+  chars: string[];
+}
+
+/**
+ * Groups characters from `chars` by a structural component they share with
+ * at least one other character in the same list — e.g. every saved word
+ * containing 氵 (water) ends up in one group — so practising them
+ * back-to-back makes the shared pattern visible instead of drilling each
+ * character in isolation. A character with no such sibling here is left out
+ * entirely: the point is comparison, and a solo character has nothing to
+ * compare against. Groups are returned largest-first, since a bigger shared
+ * group is a clearer, more useful pattern to notice.
+ */
+export function groupCharsByComponent(chars: string[], decomp: DecompositionData, dict: Dictionary): RadicalGroup[] {
+  const byComponent = new Map<string, string[]>();
+  for (const char of chars) {
+    const entry = decomp[char];
+    if (!entry?.d) continue;
+    // A character whose own decomposition repeats a component (e.g. 林 is
+    // 木 + 木) must only count once per component here — otherwise it'd show
+    // up twice in that component's group.
+    for (const component of new Set(parseComponents(entry.d, char))) {
+      const list = byComponent.get(component);
+      if (list) list.push(char);
+      else byComponent.set(component, [char]);
+    }
+  }
+
+  // Largest groups claim their characters first — a character that could
+  // fit more than one group (it shares two different components with
+  // different siblings) ends up wherever the pattern is most visible,
+  // instead of splintering into several near-empty groups.
+  const candidates = Array.from(byComponent.entries())
+    .filter(([, group]) => group.length >= 2)
+    .sort((a, b) => b[1].length - a[1].length);
+
+  const assigned = new Set<string>();
+  const groups: RadicalGroup[] = [];
+  for (const [component, group] of candidates) {
+    const remaining = group.filter((c) => !assigned.has(c));
+    if (remaining.length < 2) continue;
+    remaining.forEach((c) => assigned.add(c));
+    const meaning = componentMeaning(component, dict);
+    groups.push({
+      component,
+      label: meaning ? `${component} (${meaning})` : component,
+      chars: remaining,
+    });
+  }
+  return groups;
 }
 
 /** One mnemonic per unique Chinese character found in `text`, in first-seen order. */

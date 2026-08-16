@@ -1,14 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HanziWriter from 'hanzi-writer';
-import { Bookmark, CheckCircle2, ChevronDown, PartyPopper, PenLine, Sparkles, Volume2, X } from 'lucide-react';
+import {
+  Bookmark,
+  CheckCircle2,
+  ChevronDown,
+  PartyPopper,
+  PenLine,
+  Shapes,
+  Sparkles,
+  Volume2,
+  X,
+} from 'lucide-react';
 import { isChineseChar, segmentAndAnnotate } from '../lib/segment';
 import { hanziCharDataLoader } from '../lib/hanziData';
 import { speak, isSpeechSupported } from '../lib/speech';
 import { recordTestAttempt } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
 import { pickSummarySoundFile, playSummarySound } from '../lib/summarySound';
+import { groupCharsByComponent, loadDecomposition } from '../lib/mnemonics';
 import { WordDetailPanel } from './WordDetailPanel';
-import type { Dictionary, SavedPhrase } from '../types';
+import type { DecompositionData, Dictionary, SavedPhrase } from '../types';
 
 interface TestModeProps {
   savedPhrases: SavedPhrase[];
@@ -23,6 +34,13 @@ interface InlineDetail {
   text: string;
   pinyin: string | null;
   meanings: string[] | null;
+}
+
+/** One character to write, optionally labeled with the shared radical group
+ * it's being practised as part of (radical-grouped sessions only). */
+interface PracticeChar {
+  char: string;
+  groupLabel?: string;
 }
 
 function uniqueChineseChars(text: string): string[] {
@@ -40,6 +58,28 @@ function uniqueChineseChars(text: string): string[] {
 export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInReader, onGoToReader }: TestModeProps) {
   const dayGroups = useMemo(() => groupByDay(savedPhrases), [savedPhrases]);
   const [inlineDetail, setInlineDetail] = useState<InlineDetail | null>(null);
+  const [decomp, setDecomp] = useState<DecompositionData | null>(null);
+  const [radicalSession, setRadicalSession] = useState<PracticeChar[] | null>(null);
+
+  useEffect(() => {
+    loadDecomposition()
+      .then(setDecomp)
+      .catch(() => setDecomp({}));
+  }, []);
+
+  // Only characters that actually share a component with another saved
+  // character are included — a lone character has nothing to compare
+  // against, so grouping it wouldn't teach anything.
+  const radicalGroups = useMemo(() => {
+    if (!decomp || !dict) return [];
+    const allChars = uniqueChineseChars(savedPhrases.map((p) => p.text).join(''));
+    return groupCharsByComponent(allChars, decomp, dict);
+  }, [decomp, dict, savedPhrases]);
+  const radicalCharCount = radicalGroups.reduce((sum, g) => sum + g.chars.length, 0);
+
+  function startRadicalPractice() {
+    setRadicalSession(radicalGroups.flatMap((g) => g.chars.map((char) => ({ char, groupLabel: g.label }))));
+  }
 
   // Same behavior as tapping a phrase in My List: a single word shows its
   // meaning right here, a multi-word sentence opens in Reader instead.
@@ -57,6 +97,19 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
     }
   }
 
+  if (radicalSession) {
+    return (
+      <QuizSession
+        key="radical-practice"
+        chars={radicalSession}
+        phraseId="radical-practice"
+        fallbackSubtitle="characters that share a radical"
+        emptyMessage="No characters to practise."
+        onExit={() => setRadicalSession(null)}
+      />
+    );
+  }
+
   if (!phrase) {
     return (
       <div className="test-picker">
@@ -69,32 +122,43 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
             first.
           </p>
         ) : (
-          <div className="day-groups">
-            {dayGroups.map((group, i) => (
-              <details key={group.key} className="day-group" open={i === 0}>
-                <summary className="day-group-summary">
-                  <span className="day-group-summary-left">
-                    {group.label} <span className="day-group-count">({group.items.length})</span>
-                  </span>
-                  <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
-                </summary>
-                <div className="day-group-body">
-                  <ul className="saved-list">
-                    {group.items.map((p) => (
-                      <li key={p.id} className="saved-row">
-                        <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
-                          {p.text}
-                        </button>
-                        <button type="button" className="btn btn-accent saved-row-action-btn" onClick={() => onPickPhrase(p)}>
-                          <PenLine size={16} aria-hidden="true" /> Practise
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </details>
-            ))}
-          </div>
+          <>
+            {radicalGroups.length > 0 && (
+              <button type="button" className="btn btn-accent radical-practice-btn" onClick={startRadicalPractice}>
+                <Shapes size={18} aria-hidden="true" /> Practise by shared radical ({radicalCharCount})
+              </button>
+            )}
+            <div className="day-groups">
+              {dayGroups.map((group, i) => (
+                <details key={group.key} className="day-group" open={i === 0}>
+                  <summary className="day-group-summary">
+                    <span className="day-group-summary-left">
+                      {group.label} <span className="day-group-count">({group.items.length})</span>
+                    </span>
+                    <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
+                  </summary>
+                  <div className="day-group-body">
+                    <ul className="saved-list">
+                      {group.items.map((p) => (
+                        <li key={p.id} className="saved-row">
+                          <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
+                            {p.text}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-accent saved-row-action-btn"
+                            onClick={() => onPickPhrase(p)}
+                          >
+                            <PenLine size={16} aria-hidden="true" /> Practise
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </>
         )}
         {savedPhrases.length === 0 && (
           <button type="button" className="btn btn-primary" onClick={onGoToReader}>
@@ -115,7 +179,16 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
     );
   }
 
-  return <QuizSession key={phrase.id} phrase={phrase} onExit={() => onPickPhrase(null)} />;
+  return (
+    <QuizSession
+      key={phrase.id}
+      chars={uniqueChineseChars(phrase.text).map((char) => ({ char }))}
+      phraseId={phrase.id}
+      fallbackSubtitle={`from "${phrase.text}"`}
+      emptyMessage={`"${phrase.text}" doesn't contain any Chinese characters to practice.`}
+      onExit={() => onPickPhrase(null)}
+    />
+  );
 }
 
 interface QuizResult {
@@ -124,8 +197,15 @@ interface QuizResult {
   mistakes: number;
 }
 
-function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => void }) {
-  const chars = useMemo(() => uniqueChineseChars(phrase.text), [phrase.text]);
+interface QuizSessionProps {
+  chars: PracticeChar[];
+  phraseId: string;
+  fallbackSubtitle: string;
+  emptyMessage: string;
+  onExit: () => void;
+}
+
+function QuizSession({ chars, phraseId, fallbackSubtitle, emptyMessage, onExit }: QuizSessionProps) {
   const [index, setIndex] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
@@ -147,7 +227,8 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   const currentCharRef = useRef('');
 
   const finished = index >= chars.length;
-  const currentChar = chars[index];
+  const currentChar = chars[index]?.char ?? '';
+  const currentGroupLabel = chars[index]?.groupLabel;
   const speechSupported = isSpeechSupported();
   const summarySoundPlayedRef = useRef(false);
 
@@ -180,7 +261,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
         if (cancelledRef.current) return;
         const correct = summary.totalMistakes === 0;
         recordTestAttempt({
-          phraseId: phrase.id,
+          phraseId,
           char: summary.character,
           correct,
           mistakes: summary.totalMistakes,
@@ -224,7 +305,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
       writerRef.current?.cancelQuiz();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, finished, currentChar, phrase.id]);
+  }, [index, finished, currentChar, phraseId]);
 
   // A character with no usable stroke data can't be practiced — skip it
   // automatically instead of leaving the quiz stuck on a blank canvas.
@@ -262,7 +343,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
   if (chars.length === 0) {
     return (
       <div className="test-session">
-        <p className="empty-state">"{phrase.text}" doesn't contain any Chinese characters to practice.</p>
+        <p className="empty-state">{emptyMessage}</p>
         <button type="button" className="btn btn-primary" onClick={onExit}>
           Choose another phrase
         </button>
@@ -329,7 +410,7 @@ function QuizSession({ phrase, onExit }: { phrase: SavedPhrase; onExit: () => vo
     <div className="test-session">
       <div className="recall-session-header">
         <div className="test-progress">
-          Character {index + 1} of {chars.length} — from "{phrase.text}"
+          Character {index + 1} of {chars.length} — {currentGroupLabel ?? fallbackSubtitle}
         </div>
         <button type="button" className="icon-btn recall-stop-btn" onClick={onExit} aria-label="Stop practising">
           <X size={20} aria-hidden="true" />
