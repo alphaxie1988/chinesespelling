@@ -718,10 +718,6 @@
   --picker-bottom-reserve: 148px;
 }
 
-.radical-practice-btn {
-  width: 100%;
-}
-
 /* Stretches the picker to the full height available below the header so the
    phrase list (flex:1 below) fills the screen instead of leaving a dead
    band of empty space above the fixed Start Test bar when there are only a
