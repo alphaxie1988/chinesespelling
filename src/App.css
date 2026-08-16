@@ -718,6 +718,12 @@
   --picker-bottom-reserve: 148px;
 }
 
+.radical-practice-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .radical-practice-btn {
   width: 100%;
 }
