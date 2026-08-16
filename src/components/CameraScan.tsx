@@ -276,7 +276,10 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
               <div className="ocr-review-photo-wrap">
                 <img src={step.previewUrl} alt="Photo you scanned" className="ocr-review-photo" />
               </div>
-              <p className="hint-text">Fix any mistakes, remove lines you don't want, or add a missed one.</p>
+              <p className="hint-text">
+                Fix any mistakes, remove lines you don't want, or add a missed one. Add a space in a
+                line to split it into separate phrases.
+              </p>
 
               <ul className="ocr-line-list">
                 {step.lines.map((line, i) => (
