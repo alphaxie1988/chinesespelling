@@ -11,7 +11,7 @@ type Step =
   | { kind: 'idle' }
   | { kind: 'cropping'; imageUrl: string }
   | { kind: 'processing'; previewUrl: string }
-  | { kind: 'review'; lines: string[] }
+  | { kind: 'review'; lines: string[]; previewUrl: string }
   | { kind: 'error'; message: string; previewUrl: string };
 
 // Starts as the whole photo selected, so trimming margins is just dragging
@@ -96,13 +96,14 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     setStep({ kind: 'cropping', imageUrl: url });
   }
 
-  // previewUrl is shown throughout processing/error so the user can see
-  // exactly what image was actually sent for scanning (handy for figuring
-  // out why a scan failed, or whether a crop came out as expected). It's
-  // deliberately *not* revoked on failure — only once we're done needing it
-  // (a successful scan, or the user dismissing the error/overlay) — unlike
-  // a plain "revoke when this OCR call finishes" approach, which would pull
-  // the image out from under the error view right as it appears.
+  // previewUrl is shown throughout processing/error/review so the user can
+  // see exactly what image was actually sent for scanning (handy for
+  // figuring out why a scan failed, whether a crop came out as expected, or
+  // just as a reference photo while editing the extracted lines). It's
+  // deliberately *not* revoked on failure or success — only once we're done
+  // needing it (leaving the review step, or dismissing the error/overlay) —
+  // unlike a plain "revoke when this OCR call finishes" approach, which
+  // would pull the image out from under the view right as it appears.
   async function runOcr(imageUrl: string, previewUrl: string) {
     setStep({ kind: 'processing', previewUrl });
     try {
@@ -119,8 +120,7 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
         });
         return;
       }
-      URL.revokeObjectURL(previewUrl);
-      setStep({ kind: 'review', lines: scanned.map((l) => l.text) });
+      setStep({ kind: 'review', lines: scanned.map((l) => l.text), previewUrl });
     } catch (err) {
       // The OCR engine's text-detection step can throw on a tightly-cropped
       // selection (an internal contour-processing edge case when detected
@@ -178,7 +178,9 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
 
   function closeOverlay() {
     if (step.kind === 'cropping') URL.revokeObjectURL(step.imageUrl);
-    if (step.kind === 'processing' || step.kind === 'error') URL.revokeObjectURL(step.previewUrl);
+    if (step.kind === 'processing' || step.kind === 'error' || step.kind === 'review') {
+      URL.revokeObjectURL(step.previewUrl);
+    }
     setStep({ kind: 'idle' });
   }
 
@@ -198,6 +200,7 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
     if (step.kind !== 'review') return;
     const cleaned = step.lines.map((l) => l.trim()).filter(Boolean);
     onConfirm(cleaned);
+    URL.revokeObjectURL(step.previewUrl);
     setStep({ kind: 'idle' });
   }
 
@@ -270,6 +273,9 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
           {step.kind === 'review' && (
             <div className="ocr-review">
               <h2>Review what we found</h2>
+              <div className="ocr-review-photo-wrap">
+                <img src={step.previewUrl} alt="Photo you scanned" className="ocr-review-photo" />
+              </div>
               <p className="hint-text">Fix any mistakes, remove lines you don't want, or add a missed one.</p>
 
               <ul className="ocr-line-list">
@@ -293,7 +299,14 @@ export function CameraScan({ onConfirm }: CameraScanProps) {
               </button>
 
               <div className="test-summary-actions">
-                <button type="button" className="btn btn-ghost" onClick={() => setStep({ kind: 'idle' })}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    URL.revokeObjectURL(step.previewUrl);
+                    setStep({ kind: 'idle' });
+                  }}
+                >
                   Cancel
                 </button>
                 <button

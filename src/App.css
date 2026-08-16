@@ -1495,6 +1495,9 @@
   position: absolute;
   top: 16px;
   right: 16px;
+  /* Above .ocr-review-photo-wrap's sticky layer, which comes later in the DOM
+     and would otherwise paint over this on scroll. */
+  z-index: 2;
 }
 
 .ocr-status {
@@ -1561,6 +1564,29 @@
 .ocr-preview-img {
   max-width: 100%;
   max-height: 220px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* Pinned reference photo on the review step — .ocr-overlay (its nearest
+   scrolling ancestor) scrolls the whole review card, so this stays visible
+   near the top while a long line list scrolls underneath it. An opaque
+   background is needed since sticky doesn't clip/crop content scrolling
+   behind it otherwise. */
+.ocr-review-photo-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -20px;
+  padding: 12px 20px;
+  background: var(--bg);
+}
+
+.ocr-review-photo {
+  display: block;
+  width: 100%;
+  max-height: 160px;
   object-fit: contain;
   border-radius: 12px;
   box-shadow: var(--shadow);
