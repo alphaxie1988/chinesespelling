@@ -60,10 +60,6 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
   const [inlineDetail, setInlineDetail] = useState<InlineDetail | null>(null);
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
   const [radicalSession, setRadicalSession] = useState<PracticeChar[] | null>(null);
-  // Which saved phrases feed the radical-grouping pool below — independent
-  // of each row's own "Practise" button, which always practises just that
-  // one phrase regardless of this selection.
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadDecomposition()
@@ -71,37 +67,14 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
       .catch(() => setDecomp({}));
   }, []);
 
-  function toggleSelected(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleDaySelected(ids: string[], checked: boolean) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      for (const id of ids) {
-        if (checked) next.add(id);
-        else next.delete(id);
-      }
-      return next;
-    });
-  }
-
-  // Only characters that actually share a component with another selected
+  // Only characters that actually share a component with another saved
   // character are included — a lone character has nothing to compare
   // against, so grouping it wouldn't teach anything.
   const radicalGroups = useMemo(() => {
     if (!decomp || !dict) return [];
-    const selectedText = savedPhrases
-      .filter((p) => selectedIds.has(p.id))
-      .map((p) => p.text)
-      .join('');
-    return groupCharsByComponent(uniqueChineseChars(selectedText), decomp, dict);
-  }, [decomp, dict, savedPhrases, selectedIds]);
+    const allChars = uniqueChineseChars(savedPhrases.map((p) => p.text).join(''));
+    return groupCharsByComponent(allChars, decomp, dict);
+  }, [decomp, dict, savedPhrases]);
   const radicalCharCount = radicalGroups.reduce((sum, g) => sum + g.chars.length, 0);
 
   function startRadicalPractice() {
@@ -150,56 +123,16 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
           </p>
         ) : (
           <>
-            <div className="picker-actions">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setSelectedIds(new Set(savedPhrases.map((p) => p.id)))}
-              >
-                Select all
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={() => setSelectedIds(new Set())}>
-                Clear
-              </button>
-            </div>
-
-            <div className="radical-practice-cta">
-              <button
-                type="button"
-                className="btn btn-accent radical-practice-btn"
-                onClick={startRadicalPractice}
-                disabled={radicalCharCount === 0}
-              >
+            {radicalGroups.length > 0 && (
+              <button type="button" className="btn btn-accent radical-practice-btn" onClick={startRadicalPractice}>
                 <Shapes size={18} aria-hidden="true" /> Practise by shared radical ({radicalCharCount})
               </button>
-              {radicalCharCount === 0 && (
-                <p className="hint-text">
-                  {selectedIds.size === 0
-                    ? 'Check the words below whose characters you want to practise, then come back here.'
-                    : "None of the selected words' characters share a radical with each other."}
-                </p>
-              )}
-            </div>
-
+            )}
             <div className="day-groups">
-              {dayGroups.map((group, i) => {
-                const dayIds = group.items.map((p) => p.id);
-                const allSelected = dayIds.every((id) => selectedIds.has(id));
-                const someSelected = !allSelected && dayIds.some((id) => selectedIds.has(id));
-                return (
+              {dayGroups.map((group, i) => (
                 <details key={group.key} className="day-group" open={i === 0}>
                   <summary className="day-group-summary">
                     <span className="day-group-summary-left">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        ref={(el) => {
-                          if (el) el.indeterminate = someSelected;
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => toggleDaySelected(dayIds, e.target.checked)}
-                        aria-label={`Select all phrases from ${group.label}`}
-                      />
                       {group.label} <span className="day-group-count">({group.items.length})</span>
                     </span>
                     <ChevronDown size={18} className="day-group-chevron" aria-hidden="true" />
@@ -208,23 +141,9 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
                     <ul className="saved-list">
                       {group.items.map((p) => (
                         <li key={p.id} className="saved-row">
-                          <label className="recall-checkbox-row">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(p.id)}
-                              onChange={() => toggleSelected(p.id)}
-                            />
-                            <button
-                              type="button"
-                              className="saved-text saved-text-btn"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handleTap(p.text);
-                              }}
-                            >
-                              {p.text}
-                            </button>
-                          </label>
+                          <button type="button" className="saved-text saved-text-btn" onClick={() => handleTap(p.text)}>
+                            {p.text}
+                          </button>
                           <button
                             type="button"
                             className="btn btn-accent saved-row-action-btn"
@@ -237,8 +156,7 @@ export function TestMode({ savedPhrases, phrase, dict, onPickPhrase, onOpenInRea
                     </ul>
                   </div>
                 </details>
-                );
-              })}
+              ))}
             </div>
           </>
         )}
