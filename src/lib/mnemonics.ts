@@ -58,7 +58,40 @@ const RADICAL_ALIASES: Record<string, string> = {
   '⻌': '辵',
 };
 
+// Short, kid-friendly meanings for the combining radical forms above.
+// CC-CEDICT's own entry for these is either missing, a long "___ radical in
+// Chinese characters (Kangxi radical N), occurring in ..." description, or
+// — via the standalone-character alias — lists an unrelated "surname X"
+// sense first (CEDICT sorts common surnames before the ordinary meaning for
+// several of these: 水/火/金/刀 all open with "surname ..."). None of those
+// are useful to show a kid trying to recognize the shared pattern, so these
+// take priority over any dictionary lookup.
+const RADICAL_MEANINGS: Record<string, string> = {
+  亻: 'person',
+  彳: 'step/walk',
+  氵: 'water',
+  扌: 'hand',
+  灬: 'fire',
+  讠: 'speech',
+  饣: 'food',
+  钅: 'metal',
+  纟: 'silk/thread',
+  忄: 'heart',
+  礻: 'spirit/ritual',
+  衤: 'clothes',
+  辶: 'walk',
+  阝: 'mound/city',
+  艹: 'grass/plant',
+  '⺮': 'bamboo',
+  犭: 'animal',
+  刂: 'knife',
+  '⺈': 'knife',
+  '⻌': 'walk',
+};
+
 function componentMeaning(component: string, dict: Dictionary): string | null {
+  const curated = RADICAL_MEANINGS[component];
+  if (curated) return curated;
   const direct = dict[component];
   if (direct) return direct[0];
   const alias = RADICAL_ALIASES[component];
