@@ -82,11 +82,14 @@ function App() {
     setSavedPhrases(getSavedPhrases());
   }
 
-  // Strips stray non-Chinese text (letters, digits) while keeping
-  // punctuation and line breaks, wherever Reader's text gets set — typing,
-  // pasting, opening a saved phrase, or confirming a camera scan.
+  // Wherever Reader's text gets set — typing, pasting, opening a saved
+  // phrase, or confirming a camera scan — spaces (half- or full-width)
+  // become line breaks, so a space-separated word list gets the same
+  // per-line treatment as one word per line already does. Runs before
+  // filterToChineseAndPunctuation strips stray non-Chinese text (letters,
+  // digits), which leaves punctuation and line breaks alone either way.
   function handleReaderTextChange(text: string) {
-    setReaderText(filterToChineseAndPunctuation(text));
+    setReaderText(filterToChineseAndPunctuation(text.replace(/[ 　]+/g, '\n')));
   }
 
   function handleSave(text: string) {
