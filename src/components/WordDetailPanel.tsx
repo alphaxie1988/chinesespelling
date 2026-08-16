@@ -19,6 +19,13 @@ export function WordDetailPanel({ text, pinyin, meanings, dict, onClose }: WordD
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
   const [examplesData, setExamplesData] = useState<ExamplesData | null>(null);
 
+  // Reads the word aloud as soon as its panel appears — depends on `text`
+  // (not an empty/mount-only effect) so tapping a different chip while the
+  // panel is already open re-reads the new word too, not just the first one.
+  useEffect(() => {
+    speak(text);
+  }, [text]);
+
   useEffect(() => {
     loadDecomposition()
       .then(setDecomp)
