@@ -1265,10 +1265,12 @@
 }
 
 .recall-context-sentence {
-  margin: 0;
-  text-align: center;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  text-align: left;
   font-family: var(--hanzi-font);
-  font-size: 18px;
+  font-size: 17px;
   color: var(--text-soft);
   line-height: 1.6;
 }

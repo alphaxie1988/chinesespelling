@@ -616,14 +616,6 @@ function RecallSession({
           </div>
         )}
 
-        {!revealed && contextBlank && (
-          <p className="recall-context-sentence">
-            {contextBlank.before}
-            <span className="recall-context-blank">{'▢'.repeat(Array.from(current.displayText).length)}</span>
-            {contextBlank.after}
-          </p>
-        )}
-
         {!revealed && (
           <details className="recall-meaning-accordion">
             <summary className="recall-meaning-summary">
@@ -641,6 +633,14 @@ function RecallSession({
               ) : (
                 <p className="recall-gloss">
                   {chineseSegments.map((s) => resolveDisplayMeanings(s.meanings, s.pinyin)[0]).join(' · ')}
+                </p>
+              )}
+
+              {contextBlank && (
+                <p className="recall-context-sentence">
+                  {contextBlank.before}
+                  <span className="recall-context-blank">{'▢'.repeat(Array.from(current.displayText).length)}</span>
+                  {contextBlank.after}
                 </p>
               )}
             </div>
