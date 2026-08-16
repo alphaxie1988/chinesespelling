@@ -1264,6 +1264,24 @@
   font-size: 16px;
 }
 
+.recall-context-sentence {
+  margin: 0;
+  text-align: center;
+  font-family: var(--hanzi-font);
+  font-size: 18px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.recall-context-blank {
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.recall-context-answer {
+  color: var(--primary-dark);
+}
+
 .recall-meaning-accordion {
   width: 100%;
   background: var(--primary-bg);

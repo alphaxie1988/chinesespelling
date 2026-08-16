@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Bookmark,
+  BookOpenText,
   CheckCircle2,
   ChevronDown,
   Eye,
@@ -20,14 +21,25 @@ import {
   XCircle,
 } from 'lucide-react';
 import { isChineseChar, resolveDisplayMeanings, segmentAndAnnotate } from '../lib/segment';
-import { isSpeechSupported } from '../lib/speech';
+import { speak, isSpeechSupported } from '../lib/speech';
 import { useSpeechPlayback } from '../lib/useSpeechPlayback';
 import { getMnemonicsForText, loadDecomposition } from '../lib/mnemonics';
+import { loadExamples, type ExamplesData } from '../lib/examples';
 import { getRecallSpeed, recordRecallAttempt, setRecallSpeed } from '../lib/storage';
 import { groupByDay } from '../lib/groupByDay';
 import { pickSummarySoundFile, playSummarySound } from '../lib/summarySound';
 import { FreehandCanvas, type FreehandCanvasHandle } from './FreehandCanvas';
 import type { AnnotatedSegment, DecompositionData, Dictionary, SavedPhrase } from '../types';
+
+// The word's exact text is guaranteed to appear in its own example sentence
+// (build-examples.mjs indexes a sentence under a word only when the same
+// forward-maximum-matching segmentation actually finds that word in it), so
+// blanking out the first occurrence is always safe.
+function blankOutWord(sentence: string, word: string): { before: string; after: string } | null {
+  const idx = sentence.indexOf(word);
+  if (idx === -1) return null;
+  return { before: sentence.slice(0, idx), after: sentence.slice(idx + word.length) };
+}
 
 interface RecallModeProps {
   savedPhrases: SavedPhrase[];
@@ -338,6 +350,7 @@ function RecallSession({
   const [drawings, setDrawings] = useState<Record<string, string[]>>({});
   const canvasHandleRef = useRef<FreehandCanvasHandle>(null);
   const [decomp, setDecomp] = useState<DecompositionData | null>(null);
+  const [examplesData, setExamplesData] = useState<ExamplesData | null>(null);
   const [speed, setSpeed] = useState(() => getRecallSpeed());
   const { isSpeaking, isPaused, play: playText, togglePause: togglePausePlayback } = useSpeechPlayback();
 
@@ -356,6 +369,9 @@ function RecallSession({
     loadDecomposition()
       .then(setDecomp)
       .catch(() => setDecomp({}));
+    loadExamples()
+      .then(setExamplesData)
+      .catch(() => setExamplesData({}));
   }, []);
 
   // First-try score: a card only counts as correct here if it was known
@@ -525,6 +541,13 @@ function RecallSession({
   const chineseSegments = current.segments.filter((s) => s.isChinese);
   const chineseCharCount = chineseSegments.reduce((sum, s) => sum + s.text.length, 0);
 
+  // Fill-in-the-blank context — word cards only, since a sentence card's
+  // displayText already *is* a full sentence, not a single word to place
+  // into one. Partial coverage (see examples.ts) means most words simply
+  // won't have one, in which case this is just skipped.
+  const exampleSentence = current.id.startsWith('word:') ? examplesData?.[current.displayText]?.[0] : undefined;
+  const contextBlank = exampleSentence ? blankOutWord(exampleSentence, current.displayText) : null;
+
   return (
     <div className="test-session recall-session">
       <div className="recall-session-header">
@@ -593,6 +616,14 @@ function RecallSession({
           </div>
         )}
 
+        {!revealed && contextBlank && (
+          <p className="recall-context-sentence">
+            {contextBlank.before}
+            <span className="recall-context-blank">{'▢'.repeat(Array.from(current.displayText).length)}</span>
+            {contextBlank.after}
+          </p>
+        )}
+
         {!revealed && (
           <details className="recall-meaning-accordion">
             <summary className="recall-meaning-summary">
@@ -651,6 +682,27 @@ function RecallSession({
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {contextBlank && exampleSentence && (
+              <div className="example-box">
+                <h3 className="icon-inline">
+                  <BookOpenText size={16} aria-hidden="true" /> In a sentence
+                </h3>
+                <button
+                  type="button"
+                  className="example-sentence-btn"
+                  onClick={() => speak(exampleSentence)}
+                  disabled={!speechSupported}
+                >
+                  <span>
+                    {contextBlank.before}
+                    <strong className="recall-context-answer">{current.displayText}</strong>
+                    {contextBlank.after}
+                  </span>
+                  <Volume2 size={14} aria-hidden="true" />
+                </button>
               </div>
             )}
           </div>
