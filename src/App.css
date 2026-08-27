@@ -1289,6 +1289,11 @@
   background: var(--primary-bg);
   border-radius: 14px;
   overflow: hidden;
+  /* Sits right above the handwriting canvas — without this, a touch drag
+     that starts writing a stroke near the top of the canvas on iPad can
+     instead highlight this text as a text selection. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .recall-meaning-summary {
