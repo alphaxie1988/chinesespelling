@@ -792,6 +792,13 @@
   box-shadow: var(--shadow-lg);
   padding: 10px;
   line-height: 0;
+  /* Same iPad fix as .recall-canvas — this is also a finger-drawn quiz
+     surface (hanzi-writer renders it as SVG), so it's just as prone to
+     iOS Safari's text-selection loupe/callout hijacking a stroke. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .hanzi-target svg {
@@ -1343,6 +1350,12 @@
   border: 2px dashed var(--border);
   touch-action: none;
   cursor: crosshair;
+  /* touch-action alone stops the page from scrolling/zooming under a
+     finger stroke, but iOS Safari can still show its text-selection
+     loupe/highlight and long-press callout over the canvas without these. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .recall-canvas-readonly {
