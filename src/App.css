@@ -1383,6 +1383,11 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  /* Sits right on top of the canvas it clears, so it's just as exposed to
+     iOS Safari's text-selection loupe/callout as the canvas itself. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .recall-canvas-clear:active {
